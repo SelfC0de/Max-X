@@ -49,7 +49,14 @@ class E2ERepository(
         return withContext(Dispatchers.Default) {
             runCatching {
                 val payload = crypto.encrypt(plaintext, recipientKey)
-                "__e2e__{"c":"${payload.ciphertext}","i":"${payload.iv}","k":"${payload.encryptedKey}"}"
+                buildString {
+                    append("__e2e__")
+                    append("{")
+                    append("\"c\":\"").append(payload.ciphertext).append("\"")
+                    append(",\"i\":\"").append(payload.iv).append("\"")
+                    append(",\"k\":\"").append(payload.encryptedKey).append("\"")
+                    append("}")
+                }
             }.getOrNull()
         }
     }

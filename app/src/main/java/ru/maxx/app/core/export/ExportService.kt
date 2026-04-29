@@ -104,5 +104,7 @@ class ExportService(private val ctx: Context) {
         return sb.toString()
     }
 
-    private fun escHtml(s: String) = s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace(""","&quot;")
+    private fun escHtml(s: String) = s
+        .replace("&", "&amp;").replace("<", "&lt;")
+        .replace(">", "&gt;").replace("\"", "&quot;")
 }
