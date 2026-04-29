@@ -174,3 +174,52 @@ app/src/main/java/ru/maxx/app/
 MIT License — свободное использование, модификация и распространение.
 Данный форк не аффилирован с ООО «ВК» / MAX / oneme.ru.
 ```
+
+---
+
+## Первая публикация на GitHub
+
+```bash
+# 1. Распакуй архив
+unzip Max-X-github.zip
+cd Max-X
+
+# 2. Инициализируй репозиторий
+git init
+git add .
+git commit -m "feat: initial release v1.0.0"
+
+# 3. Подключи remote и запушь
+git remote add origin https://github.com/SelfC0de/Max-X.git
+git branch -M main
+git push -u origin main
+```
+
+## Пуш обновлений
+
+```bash
+# Обновить один файл
+git add app/src/main/java/ru/maxx/app/ui/screens/chat/ChatScreen.kt
+git commit -m "fix: описание изменения"
+git push
+
+# Обновить всё изменённое
+git add .
+git commit -m "feat: описание обновления"
+git push
+
+# Обновить и сразу запустить билд (указываешь тег и описание в Actions UI)
+git add .
+git commit -m "release: v1.0.1"
+git push
+# → GitHub → Actions → Build Max-X → Run workflow → v1.0.1
+```
+
+## Запуск сборки APK вручную
+
+```
+GitHub → Actions → Build Max-X → Run workflow
+  version_tag:    v1.0.1
+  release_notes:  что изменилось
+→ Releases → Pre-release → Max-X.apk
+```
