@@ -224,12 +224,12 @@ fun ProfileScreen(
                 Text(userPhone, style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = {},
+                    OutlinedButton(onClick = { showEditDialog = true },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = Accent),
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, Accent)
                     ) { Text("Редактировать", fontSize = 12.sp) }
-                    OutlinedButton(onClick = {},
+                    OutlinedButton(onClick = { showStatusDialog = true },
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextMuted),
                         border = androidx.compose.foundation.BorderStroke(0.5.dp, Border)

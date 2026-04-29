@@ -130,4 +130,13 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
         super.onCleared()
         authWatchJob?.cancel()
     }
+
+    fun loginWithToken(token: String) {
+        viewModelScope.launch {
+            _state.value = UiState.Loading
+            container.authPrefs.setToken(token)
+            container.session.authenticateWithToken(token)
+            _state.value = UiState.Success
+        }
+    }
 }

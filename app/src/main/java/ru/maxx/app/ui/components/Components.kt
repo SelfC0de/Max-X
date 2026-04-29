@@ -29,6 +29,7 @@ fun MaxXTopBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     Column {
+        Spacer(Modifier.windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars).background(BgSecondary))
         Row(
             modifier = Modifier.fillMaxWidth().height(52.dp)
                 .background(BgSecondary).padding(horizontal = 4.dp),

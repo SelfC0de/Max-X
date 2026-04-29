@@ -52,7 +52,8 @@ fun AppNavGraph(
         }
         composable(Route.Phone.path) {
             PhoneScreen(container = container,
-                onOtpRequested = { token, phone -> nav.navigate(Route.Otp.go(token, phone)) })
+                onOtpRequested = { token, phone -> nav.navigate(Route.Otp.go(token, phone)) },
+                onAuthorized = { nav.navigate(Route.Chats.path) { popUpTo(0) { inclusive = true } } })
         }
         composable(Route.Otp.path, listOf(
                 navArgument("token") { type = NavType.StringType },

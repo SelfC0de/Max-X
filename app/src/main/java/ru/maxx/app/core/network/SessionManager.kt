@@ -242,6 +242,15 @@ class SessionManager(
         }
     }
 
+    suspend fun authenticateWithToken(token: String) {
+        if (socket.state !is MaxSocket.State.Connected) {
+            socket.connect()
+        }
+        socket.markAuthorized()
+        _authState.value = AuthState.Authenticated
+        scope.launch { authenticate(token) }
+    }
+
     private suspend fun authenticate(token: String) {
         socket.send(MaxProtocol.Op.AUTH_CHATS, mapOf(
             "token" to token,

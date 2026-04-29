@@ -40,12 +40,16 @@ private data class DevicePreset(
 )
 
 private val DEVICE_PRESETS = listOf(
+    // Android
     DevicePreset("Samsung Galaxy S24 Ultra", "Android 14", "xxhdpi 480dpi 1440x3088"),
     DevicePreset("Samsung Galaxy S23 Ultra", "Android 14", "xxhdpi 480dpi 1440x3088"),
     DevicePreset("Samsung Galaxy S22",       "Android 13", "xxhdpi 480dpi 1080x2340"),
+    DevicePreset("Samsung Galaxy A54",       "Android 13", "xhdpi 400dpi 1080x2340"),
     DevicePreset("Xiaomi 14 Ultra",          "Android 14", "xxhdpi 480dpi 1440x3200"),
     DevicePreset("Xiaomi 13 Pro",            "Android 13", "xxhdpi 480dpi 1440x3200"),
+    DevicePreset("Xiaomi Redmi Note 13",     "Android 13", "xhdpi 395dpi 1080x2400"),
     DevicePreset("Google Pixel 8 Pro",       "Android 14", "xxhdpi 480dpi 1344x2992"),
+    DevicePreset("Google Pixel 8",           "Android 14", "xxhdpi 428dpi 1080x2400"),
     DevicePreset("Google Pixel 7",           "Android 13", "xxhdpi 420dpi 1080x2400"),
     DevicePreset("OnePlus 12",               "Android 14", "xxhdpi 480dpi 1440x3168"),
     DevicePreset("OnePlus 11",               "Android 13", "xxhdpi 450dpi 1440x3216"),
@@ -53,6 +57,27 @@ private val DEVICE_PRESETS = listOf(
     DevicePreset("Realme GT5 Pro",           "Android 14", "xxhdpi 480dpi 1440x3168"),
     DevicePreset("OPPO Find X7 Ultra",       "Android 14", "xxhdpi 480dpi 1440x3168"),
     DevicePreset("Vivo X100 Pro",            "Android 14", "xxhdpi 480dpi 1260x2800"),
+    DevicePreset("Sony Xperia 1 V",          "Android 13", "xhdpi 643dpi 1644x3840"),
+    DevicePreset("Huawei P60 Pro",           "Android 13", "xxhdpi 460dpi 1220x2700"),
+    // iOS
+    DevicePreset("iPhone 15 Pro Max",        "iOS 17",     "xxhdpi 460dpi 1290x2796", appVersion = "26.14.1"),
+    DevicePreset("iPhone 15 Pro",            "iOS 17",     "xxhdpi 460dpi 1179x2556", appVersion = "26.14.1"),
+    DevicePreset("iPhone 15",                "iOS 17",     "xxhdpi 460dpi 1179x2556", appVersion = "26.14.1"),
+    DevicePreset("iPhone 14 Pro Max",        "iOS 16",     "xxhdpi 460dpi 1290x2796", appVersion = "26.14.1"),
+    DevicePreset("iPhone 14",                "iOS 16",     "xxhdpi 460dpi 1170x2532", appVersion = "26.14.1"),
+    DevicePreset("iPhone 13 Pro Max",        "iOS 15",     "xxhdpi 458dpi 1284x2778", appVersion = "26.14.1"),
+    DevicePreset("iPad Pro 12.9",            "iOS 17",     "xhdpi 264dpi 2048x2732",  appVersion = "26.14.1"),
+    // Windows
+    DevicePreset("Windows PC",               "Windows 11", "xxhdpi 96dpi 1920x1080",  appVersion = "26.14.1"),
+    DevicePreset("Windows Laptop",           "Windows 11", "xhdpi 144dpi 2560x1600",  appVersion = "26.14.1"),
+    DevicePreset("Windows PC 4K",            "Windows 10", "xxhdpi 96dpi 3840x2160",  appVersion = "26.14.1"),
+    // macOS
+    DevicePreset("MacBook Pro 14",           "macOS 14",   "xxhdpi 254dpi 3024x1964", appVersion = "26.14.1"),
+    DevicePreset("MacBook Air M2",           "macOS 13",   "xxhdpi 224dpi 2560x1664", appVersion = "26.14.1"),
+    DevicePreset("iMac 27",                  "macOS 14",   "xxhdpi 218dpi 5120x2880", appVersion = "26.14.1"),
+    // Linux
+    DevicePreset("Linux Desktop",            "Linux",      "xxhdpi 96dpi 1920x1080",  appVersion = "26.14.1"),
+    DevicePreset("Linux Laptop",             "Linux",      "xhdpi 192dpi 2560x1600",  appVersion = "26.14.1"),
 )
 
 private fun genId(): String = ByteArray(8)

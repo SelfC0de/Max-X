@@ -25,6 +25,7 @@ import ru.maxx.app.ui.screens.contacts.ContactsScreen
 import ru.maxx.app.ui.screens.channels.ChannelsScreen
 import ru.maxx.app.ui.screens.profile.ProfileScreen
 import ru.maxx.app.ui.screens.settings.SettingsScreen
+import ru.maxx.app.ui.screens.auth.SpoofSetupScreen
 import ru.maxx.app.ui.screens.favorites.FavoritesScreen
 import ru.maxx.app.ui.theme.*
 
@@ -35,11 +36,16 @@ fun MainScreen(
     onLogout: () -> Unit
 ) {
     var selectedTab  by remember { mutableIntStateOf(0) }
-    var showSettings  by remember { mutableStateOf(false) }
-    var showFavorites by remember { mutableStateOf(false) }
+    var showSettings    by remember { mutableStateOf(false) }
+    var showFavorites   by remember { mutableStateOf(false) }
+    var showSpoofSetup  by remember { mutableStateOf(false) }
 
+    if (showSpoofSetup) {
+        SpoofSetupScreen(spoofing = container.spoofing, onApplied = { showSpoofSetup = false })
+        return
+    }
     if (showSettings) {
-        SettingsScreen(container = container, onBack = { showSettings = false })
+        SettingsScreen(container = container, onBack = { showSettings = false }, onSpoofSetup = { showSettings = false; showSpoofSetup = true })
         return
     }
     if (showFavorites) {

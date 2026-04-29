@@ -64,7 +64,7 @@ class SettingsViewModel(private val prefs: AppPrefs) : ViewModel() {
 }
 
 @Composable
-fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
+fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: () -> Unit = {}) {
     val vm = remember { SettingsViewModel(container.appPrefs) }
 
     val biometric   by vm.biometric.collectAsState()
@@ -161,11 +161,13 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
-            // Внешний вид
-            ExpandableCard("Внешний вид", Icons.Outlined.Palette, BgTertiary, TextSecondary) {
-                SettingsToggle("Тема", "Тёмная") {}
-                SettingsToggle("Размер шрифта", "Средний") {}
-                SettingsToggle("Цвет акцента", "Зелёный #8CBF26", showDivider = false) {}
+
+
+            // Настройки устройства
+            ExpandableCard("Устройство", Icons.Outlined.PhoneAndroid, BlueDark, Blue) {
+                SettingsRow("Параметры спуфинга", subtitle = "Изменить профиль устройства",
+                    icon = Icons.Outlined.Security, iconBgColor = BlueDark, iconColor = Blue,
+                    onClick = { onSpoofSetup() }, showDivider = false)
             }
 
             Spacer(Modifier.height(8.dp))

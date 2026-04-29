@@ -21,13 +21,65 @@ import ru.maxx.app.ui.components.MaxXButton
 import ru.maxx.app.ui.theme.*
 
 @Composable
-fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Unit) {
+fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Unit, onAuthorized: () -> Unit = {}) {
     val vm = remember { AuthViewModel(container) }
     val state by vm.state.collectAsState()
 
     var phone by remember { mutableStateOf("+7") }
+    var showTokenLogin by remember { mutableStateOf(false) }
+    var tokenInput by remember { mutableStateOf("") }
+
+    // Вход через токен напрямую
+    if (showTokenLogin) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { showTokenLogin = false },
+            containerColor   = ru.maxx.app.ui.theme.BgCard,
+            title = { androidx.compose.material3.Text("Вход по токену", style = androidx.compose.material3.MaterialTheme.typography.titleSmall) },
+            text = {
+                androidx.compose.foundation.layout.Column(
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp)
+                ) {
+                    androidx.compose.material3.Text("Вставьте токен сессии:", fontSize = 11.sp, color = ru.maxx.app.ui.theme.TextMuted)
+                    androidx.compose.material3.OutlinedTextField(
+                        value = tokenInput,
+                        onValueChange = { tokenInput = it },
+                        placeholder = { androidx.compose.material3.Text("An_Sx6HQ...", color = ru.maxx.app.ui.theme.TextHint, fontSize = 11.sp) },
+                        modifier = androidx.compose.ui.Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        minLines = 3, maxLines = 5,
+                        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp),
+                        colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor   = ru.maxx.app.ui.theme.BgSecondary,
+                            unfocusedContainerColor = ru.maxx.app.ui.theme.BgSecondary,
+                            focusedBorderColor      = ru.maxx.app.ui.theme.Accent,
+                            unfocusedBorderColor    = ru.maxx.app.ui.theme.Border,
+                            focusedTextColor        = ru.maxx.app.ui.theme.TextPrimary,
+                            unfocusedTextColor      = ru.maxx.app.ui.theme.TextPrimary,
+                            cursorColor             = ru.maxx.app.ui.theme.Accent
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = tokenInput.length > 20,
+                    onClick = {
+                        container.authPrefs.setToken(tokenInput.trim())
+                        showTokenLogin = false
+                        vm.loginWithToken(tokenInput.trim())
+                    }
+                ) { androidx.compose.material3.Text("Войти", color = if (tokenInput.length > 20) ru.maxx.app.ui.theme.Accent else ru.maxx.app.ui.theme.TextMuted) }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { showTokenLogin = false; tokenInput = "" }) {
+                    androidx.compose.material3.Text("Отмена", color = ru.maxx.app.ui.theme.TextMuted)
+                }
+            }
+        )
+    }
 
     LaunchedEffect(state) {
+        if (state is AuthViewModel.UiState.Success) { onAuthorized() }
         if (state is AuthViewModel.UiState.OtpSent) {
             onOtpRequested((state as AuthViewModel.UiState.OtpSent).token, phone)
             vm.clearError()
@@ -82,7 +134,18 @@ fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Uni
             enabled = phone.length >= 11 && state != AuthViewModel.UiState.Loading
         )
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
+        androidx.compose.material3.TextButton(
+            onClick = { showTokenLogin = true },
+            modifier = androidx.compose.ui.Modifier.fillMaxWidth()
+        ) {
+            androidx.compose.material3.Text(
+                "Войти по токену сессии",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextMuted
+            )
+        }
+        Spacer(Modifier.height(8.dp))
         Text(
             "Только api.oneme.ru — никакой телеметрии",
             style = MaterialTheme.typography.labelSmall,
