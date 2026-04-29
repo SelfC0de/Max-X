@@ -2,6 +2,7 @@ package ru.maxx.app.ui.screens.auth
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -32,7 +33,7 @@ fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Uni
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(BgPrimary).padding(horizontal = 28.dp),
+        modifier = Modifier.fillMaxSize().background(BgPrimary).statusBarsPadding().padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,6 +30,7 @@ import kotlinx.coroutines.launch
 import ru.maxx.app.data.prefs.AppPrefs
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.components.*
+import androidx.compose.material.icons.outlined.Check
 import ru.maxx.app.ui.theme.*
 
 class SettingsViewModel(private val prefs: AppPrefs) : ViewModel() {
@@ -82,12 +85,32 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
 
             // Приватность
+            var showPhonePicker  by remember { mutableStateOf(false) }
+            var showOnlinePicker by remember { mutableStateOf(false) }
+
+            if (showPhonePicker) {
+                VisibilityDialog(
+                    title   = "Кто видит номер телефона",
+                    current = phoneVis,
+                    onSelect = { vm.setPhoneVis(it); showPhonePicker = false },
+                    onDismiss = { showPhonePicker = false }
+                )
+            }
+            if (showOnlinePicker) {
+                VisibilityDialog(
+                    title   = "Кто видит статус «в сети»",
+                    current = onlineVis,
+                    onSelect = { vm.setOnlineVis(it); showOnlinePicker = false },
+                    onDismiss = { showOnlinePicker = false }
+                )
+            }
+
             ExpandableCard(
                 title = "Приватность",
                 icon = Icons.Filled.Shield, iconBg = AccentDark, iconColor = Accent
             ) {
-                SettingsToggle("Номер телефона", visLabel(phoneVis)) { /* picker */ }
-                SettingsToggle("Статус «в сети»", visLabel(onlineVis)) { /* picker */ }
+                SettingsToggle("Номер телефона", visLabel(phoneVis)) { showPhonePicker = true }
+                SettingsToggle("Статус «в сети»", visLabel(onlineVis)) { showOnlinePicker = true }
                 SettingsSwitch("Ссылка при пересылке", false) { }
             }
 
@@ -249,4 +272,38 @@ private fun SettingsInfo2(label: String, value: String, showDivider: Boolean = t
 
 private fun visLabel(v: String) = when (v) {
     "everyone" -> "Все"; "contacts" -> "Контакты"; "nobody" -> "Никто"; else -> v
+}
+
+@Composable
+private fun VisibilityDialog(
+    title: String,
+    current: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val options = listOf("Все", "Мои контакты", "Никто")
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor   = BgCard,
+        title = { Text(title, style = MaterialTheme.typography.titleSmall) },
+        text = {
+            Column {
+                options.forEach { opt ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(opt) }
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(opt, color = if (opt == current) Accent else TextPrimary,
+                            style = MaterialTheme.typography.bodyMedium)
+                        if (opt == current) Icon(Icons.Outlined.Check, null, tint = Accent, modifier = Modifier.size(16.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {}
+    )
 }

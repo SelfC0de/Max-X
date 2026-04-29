@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.components.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import ru.maxx.app.ui.theme.*
 
 class ProfileViewModel(private val container: AppContainer) : ViewModel() {
@@ -97,6 +99,94 @@ fun ProfileScreen(
     val userPhone = container.authPrefs.getUserPhone() ?: "+7 *** ***-**-**"
     val initials  = userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
 
+    var showEditDialog    by remember { mutableStateOf(false) }
+    var showStatusDialog  by remember { mutableStateOf(false) }
+    var showSessionsDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf(userName) }
+    var statusText by remember { mutableStateOf("") }
+
+    // Диалог редактирования имени
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            containerColor   = BgCard,
+            title = { Text("Редактировать профиль", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                OutlinedTextField(
+                    value = editName, onValueChange = { editName = it },
+                    label = { Text("Имя", fontSize = 12.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = BgSecondary, unfocusedContainerColor = BgSecondary,
+                        focusedBorderColor = Accent, unfocusedBorderColor = Border,
+                        focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                        cursorColor = Accent, focusedLabelColor = Accent, unfocusedLabelColor = TextHint
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    container.authPrefs.setUserName(editName)
+                    showEditDialog = false
+                }) { Text("Сохранить", color = Accent) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Отмена", color = TextMuted) }
+            }
+        )
+    }
+
+    // Диалог статуса
+    if (showStatusDialog) {
+        val statuses = listOf("" to "Нет статуса", "🌙 Не беспокоить" to "Не беспокоить",
+            "💼 На работе" to "На работе", "🏠 Дома" to "Дома", "📵 Нет связи" to "Нет связи")
+        AlertDialog(
+            onDismissRequest = { showStatusDialog = false },
+            containerColor   = BgCard,
+            title = { Text("Установить статус", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Column {
+                    statuses.forEach { (value, label) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth()
+                                .clickable { statusText = value; showStatusDialog = false }
+                                .padding(vertical = 10.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(label, color = if (statusText == value) Accent else TextPrimary,
+                                style = MaterialTheme.typography.bodyMedium)
+                            if (statusText == value) Icon(Icons.Outlined.Check, null,
+                                tint = Accent, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // Диалог активных сессий
+    if (showSessionsDialog) {
+        AlertDialog(
+            onDismissRequest = { showSessionsDialog = false },
+            containerColor   = BgCard,
+            title = { Text("Активные сессии", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SessionItem("Текущее устройство", "Android · прямо сейчас", isCurrent = true)
+                    SessionItem("Honor Magic6 Pro", "Android 14 · сегодня", isCurrent = false,
+                        onTerminate = { showSessionsDialog = false })
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSessionsDialog = false }) { Text("Закрыть", color = TextMuted) }
+            }
+        )
+    }
+
     Scaffold(
         containerColor = BgPrimary,
         snackbarHost = { SnackbarHost(snackbar) },
@@ -153,7 +243,7 @@ fun ProfileScreen(
                 SettingsRow("Избранное", icon = Icons.Filled.Bookmark, iconBgColor = AccentDark, iconColor = Accent, onClick = onFavoritesClick)
                 SettingsRow("Мои каналы", icon = Icons.Outlined.Campaign, iconBgColor = PurpleDark, iconColor = Purple, onClick = {})
                 SettingsRow("Активные сессии", icon = Icons.Outlined.Devices, iconBgColor = BlueDark, iconColor = Blue,
-                    subtitle = "2 устройства", onClick = {}, showDivider = false)
+                    subtitle = "Управление сессиями", onClick = { showSessionsDialog = true }, showDivider = false)
             }
 
             Spacer(Modifier.height(8.dp))
@@ -211,6 +301,25 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.labelSmall, color = TextHint,
                 modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
                 textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun SessionItem(name: String, subtitle: String, isCurrent: Boolean, onTerminate: (() -> Unit)? = null) {
+    Row(
+        modifier = Modifier.fillMaxWidth().background(BgSecondary, androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = TextMuted)
+        }
+        if (isCurrent) {
+            Text("Текущая", fontSize = 10.sp, color = Accent)
+        } else if (onTerminate != null) {
+            TextButton(onClick = onTerminate) { Text("Завершить", fontSize = 11.sp, color = Red) }
         }
     }
 }

@@ -34,7 +34,11 @@ fun OtpScreen(container: AppContainer, token: String, phone: String = "", onAuth
     var countdown    by remember { mutableStateOf(60) }
     var canResend    by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
+    // Ключ resendKey перезапускает таймер при каждом новом запросе кода
+    var resendKey by remember { mutableStateOf(0) }
+    LaunchedEffect(resendKey) {
+        countdown = 60
+        canResend = false
         while (countdown > 0) {
             delay(1000)
             countdown--
@@ -51,11 +55,9 @@ fun OtpScreen(container: AppContainer, token: String, phone: String = "", onAuth
                 showPass    = true
             }
             is AuthViewModel.UiState.OtpSent -> {
-                // Новый токен получен после повторного запроса
                 currentToken = s.token
                 code         = ""
-                countdown    = 60
-                canResend    = false
+                resendKey++  // перезапускает таймер
             }
             is AuthViewModel.UiState.CodeExpired -> {
                 // Сервер сказал что код устарел — сбрасываем
@@ -68,7 +70,7 @@ fun OtpScreen(container: AppContainer, token: String, phone: String = "", onAuth
     }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(BgPrimary).padding(horizontal = 28.dp),
+        modifier = Modifier.fillMaxSize().background(BgPrimary).statusBarsPadding().padding(horizontal = 28.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
