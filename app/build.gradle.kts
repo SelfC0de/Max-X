@@ -20,8 +20,22 @@ android {
         buildConfigField("int",    "APP_BUILD",   "6686")
     }
 
+    val hasEnvSigning = System.getenv("RELEASE_STORE_FILE") != null
+
+    signingConfigs {
+        if (hasEnvSigning) {
+            create("release") {
+                storeFile     = file(System.getenv("RELEASE_STORE_FILE")!!)
+                storePassword = System.getenv("RELEASE_STORE_PASSWORD")!!
+                keyAlias      = System.getenv("RELEASE_KEY_ALIAS")!!
+                keyPassword   = System.getenv("RELEASE_KEY_PASSWORD")!!
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasEnvSigning) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled   = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")

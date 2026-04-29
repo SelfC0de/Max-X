@@ -31,48 +31,36 @@ jobs:
       - name: Grant gradlew execute permission
         run: chmod +x gradlew
 
-      - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --no-daemon --stacktrace
-
-      - name: Generate debug keystore for signing
+      - name: Generate keystore
         run: |
           keytool -genkeypair \
-            -keystore maxx-release.jks \
+            -keystore ${{ runner.temp }}/maxx-release.jks \
             -alias maxx \
-            -keyalg RSA \
-            -keysize 2048 \
+            -keyalg RSA -keysize 2048 \
             -validity 10000 \
-            -storepass maxxrelease \
-            -keypass maxxrelease \
-            -dname "CN=Max-X, OU=Dev, O=SelfCode, L=RU, S=RU, C=RU" \
+            -storepass maxxrelease123 \
+            -keypass maxxrelease123 \
+            -dname "CN=Max-X,OU=Dev,O=SelfCode,L=RU,S=RU,C=RU" \
             -noprompt
 
-      - name: Sign APK
-        run: |
-          $JAVA_HOME/bin/jarsigner \
-            -verbose \
-            -sigalg SHA256withRSA \
-            -digestalg SHA-256 \
-            -keystore maxx-release.jks \
-            -storepass maxxrelease \
-            -keypass maxxrelease \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
-            maxx
+      - name: Build signed Release APK
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
+        env:
+          RELEASE_STORE_FILE:     ${{ runner.temp }}/maxx-release.jks
+          RELEASE_STORE_PASSWORD: maxxrelease123
+          RELEASE_KEY_ALIAS:      maxx
+          RELEASE_KEY_PASSWORD:   maxxrelease123
 
-      - name: Align and rename APK → Max-X.apk
-        run: |
-          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/zipalign \
-            -v 4 \
-            app/build/outputs/apk/release/app-release-unsigned.apk \
-            Max-X.apk
+      - name: Rename APK → Max-X.apk
+        run: cp app/build/outputs/apk/release/app-release.apk Max-X.apk
 
       - name: Create GitHub Pre-release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.version_tag }}
-          name: "Max-X ${{ github.event.inputs.version_tag }}"
-          body: ${{ github.event.inputs.release_notes }}
+          tag_name:   ${{ github.event.inputs.version_tag }}
+          name:       "Max-X ${{ github.event.inputs.version_tag }}"
+          body:       ${{ github.event.inputs.release_notes }}
           prerelease: true
-          files: Max-X.apk
+          files:      Max-X.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
