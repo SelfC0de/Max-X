@@ -170,6 +170,100 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit) {
 
             Spacer(Modifier.height(8.dp))
 
+            // Сессия
+            var showTokenDialog  by remember { mutableStateOf(false) }
+            var showImportDialog by remember { mutableStateOf(false) }
+            var importTokenText  by remember { mutableStateOf("") }
+            val currentToken = container.authPrefs.getToken() ?: ""
+
+            if (showTokenDialog) {
+                val clipboardManager = androidx.compose.ui.platform.LocalClipboardManager.current
+                AlertDialog(
+                    onDismissRequest = { showTokenDialog = false },
+                    containerColor   = BgCard,
+                    title = { Text("Текущий токен", style = MaterialTheme.typography.titleSmall) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Токен сессии:", fontSize = 11.sp, color = TextMuted)
+                            Text(
+                                currentToken,
+                                fontSize = 10.sp, color = TextSecondary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(BgSecondary, RoundedCornerShape(6.dp))
+                                    .padding(8.dp),
+                                maxLines = 4,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(currentToken))
+                            showTokenDialog = false
+                        }) { Text("Скопировать", color = Accent) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showTokenDialog = false }) { Text("Закрыть", color = TextMuted) }
+                    }
+                )
+            }
+
+            if (showImportDialog) {
+                AlertDialog(
+                    onDismissRequest = { showImportDialog = false },
+                    containerColor   = BgCard,
+                    title = { Text("Импорт токена", style = MaterialTheme.typography.titleSmall) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("Вставьте токен сессии:", fontSize = 11.sp, color = TextMuted)
+                            OutlinedTextField(
+                                value = importTokenText,
+                                onValueChange = { importTokenText = it },
+                                placeholder = { Text("An_Sx6HQ...", color = TextHint, fontSize = 11.sp) },
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                minLines = 3, maxLines = 5,
+                                textStyle = androidx.compose.ui.text.TextStyle(fontSize = 11.sp),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedContainerColor   = BgSecondary, unfocusedContainerColor = BgSecondary,
+                                    focusedBorderColor      = Accent,       unfocusedBorderColor    = Border,
+                                    focusedTextColor        = TextPrimary,  unfocusedTextColor      = TextPrimary,
+                                    cursorColor             = Accent,
+                                    focusedLabelColor       = Accent,       unfocusedLabelColor     = TextHint
+                                )
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(
+                            enabled = importTokenText.length > 20,
+                            onClick = {
+                                container.authPrefs.setToken(importTokenText.trim())
+                                showImportDialog = false
+                                importTokenText  = ""
+                            }
+                        ) { Text("Применить", color = if (importTokenText.length > 20) Accent else TextMuted) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showImportDialog = false; importTokenText = "" }) {
+                            Text("Отмена", color = TextMuted)
+                        }
+                    }
+                )
+            }
+
+            ExpandableCard("Сессия", Icons.Outlined.VpnKey, BgTertiary, TextSecondary) {
+                SettingsRow("Экспорт токена", subtitle = "Скопировать токен текущей сессии",
+                    icon = Icons.Outlined.ContentCopy, iconBgColor = BgTertiary, iconColor = TextSecondary,
+                    onClick = { showTokenDialog = true })
+                SettingsRow("Импорт токена", subtitle = "Войти с готовым токеном",
+                    icon = Icons.Outlined.Login, iconBgColor = BgTertiary, iconColor = TextSecondary,
+                    onClick = { showImportDialog = true }, showDivider = false)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
             // О приложении
             ExpandableCard("О приложении", Icons.Outlined.Info, BgTertiary, TextMuted) {
                 SettingsInfo2("Версия", "1.0.0")
