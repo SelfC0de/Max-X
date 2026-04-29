@@ -1,0 +1,56 @@
+name: Build Max-X
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Тег версии (например: v1.0.1)'
+        required: true
+        default: 'v1.0.0'
+      release_notes:
+        description: 'Описание релиза'
+        required: false
+        default: 'Pre-release build'
+
+jobs:
+  build:
+    name: Build APK → Pre-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant gradlew execute permission
+        run: chmod +x gradlew
+
+      - name: Validate Gradle wrapper
+        uses: gradle/wrapper-validation-action@v2
+
+      - name: Build Release APK (unsigned)
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          GRADLE_OPTS: "-Xmx2g -Dorg.gradle.daemon=false"
+
+      - name: Rename APK → Max-X.apk
+        run: |
+          mkdir -p output
+          cp app/build/outputs/apk/release/app-release-unsigned.apk output/Max-X.apk
+
+      - name: Create GitHub Pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.version_tag }}
+          name: "Max-X ${{ github.event.inputs.version_tag }}"
+          body: ${{ github.event.inputs.release_notes }}
+          prerelease: true
+          files: output/Max-X.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,7 @@
+-keep class ru.maxx.app.** { *; }
+-keep class org.msgpack.** { *; }
+-keep class net.jpountz.** { *; }
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keepattributes *Annotation*
+-keepclassmembers class * implements android.os.Parcelable { static ** CREATOR; }
