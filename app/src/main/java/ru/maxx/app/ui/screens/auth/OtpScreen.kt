@@ -13,28 +13,55 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.components.MaxXButton
 import ru.maxx.app.ui.theme.*
 
 @Composable
-fun OtpScreen(container: AppContainer, token: String, onAuthorized: () -> Unit) {
+fun OtpScreen(container: AppContainer, token: String, phone: String = "", onAuthorized: () -> Unit) {
     val vm = remember { AuthViewModel(container) }
     val state by vm.state.collectAsState()
 
-    var code by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passTrackId by remember { mutableStateOf("") }
-    var passHint by remember { mutableStateOf<String?>(null) }
-    var showPass by remember { mutableStateOf(false) }
+    var code         by remember { mutableStateOf("") }
+    var password     by remember { mutableStateOf("") }
+    var passTrackId  by remember { mutableStateOf("") }
+    var passHint     by remember { mutableStateOf<String?>(null) }
+    var showPass     by remember { mutableStateOf(false) }
+    var currentToken by remember { mutableStateOf(token) }
+
+    // Таймер обратного отсчёта для повторного запроса кода
+    var countdown    by remember { mutableStateOf(60) }
+    var canResend    by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        while (countdown > 0) {
+            delay(1000)
+            countdown--
+        }
+        canResend = true
+    }
 
     LaunchedEffect(state) {
         when (val s = state) {
-            is AuthViewModel.UiState.Success -> onAuthorized()
+            is AuthViewModel.UiState.Success          -> onAuthorized()
             is AuthViewModel.UiState.PasswordRequired -> {
                 passTrackId = s.trackId
-                passHint = s.hint
-                showPass = true
+                passHint    = s.hint
+                showPass    = true
+            }
+            is AuthViewModel.UiState.OtpSent -> {
+                // Новый токен получен после повторного запроса
+                currentToken = s.token
+                code         = ""
+                countdown    = 60
+                canResend    = false
+            }
+            is AuthViewModel.UiState.CodeExpired -> {
+                // Сервер сказал что код устарел — сбрасываем
+                code      = ""
+                canResend = true
+                countdown = 0
             }
             else -> {}
         }
@@ -45,8 +72,10 @@ fun OtpScreen(container: AppContainer, token: String, onAuthorized: () -> Unit) 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(if (showPass) "Пароль аккаунта" else "Код подтверждения",
-            style = MaterialTheme.typography.titleMedium)
+        Text(
+            if (showPass) "Пароль аккаунта" else "Код подтверждения",
+            style = MaterialTheme.typography.titleMedium
+        )
         Spacer(Modifier.height(6.dp))
         Text(
             if (showPass) passHint?.let { "Подсказка: $it" } ?: "Введите пароль двухэтапной защиты"
@@ -57,7 +86,8 @@ fun OtpScreen(container: AppContainer, token: String, onAuthorized: () -> Unit) 
 
         if (!showPass) {
             OutlinedTextField(
-                value = code, onValueChange = { if (it.length <= 6) { code = it; vm.clearError() } },
+                value = code,
+                onValueChange = { if (it.length <= 6) { code = it; vm.clearError() } },
                 placeholder = { Text("000000", color = TextHint) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 modifier = Modifier.fillMaxWidth(),
@@ -65,12 +95,13 @@ fun OtpScreen(container: AppContainer, token: String, onAuthorized: () -> Unit) 
                 textStyle = LocalTextStyle.current.copy(
                     textAlign = TextAlign.Center, fontSize = 26.sp, letterSpacing = 10.sp
                 ),
-                isError = state is AuthViewModel.UiState.Error,
+                isError = state is AuthViewModel.UiState.Error || state is AuthViewModel.UiState.CodeExpired,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = BgCard, unfocusedContainerColor = BgCard,
-                    focusedBorderColor = Accent, unfocusedBorderColor = Border,
-                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-                    cursorColor = Accent, errorBorderColor = Red, errorContainerColor = BgCard
+                    focusedContainerColor   = BgCard, unfocusedContainerColor = BgCard,
+                    focusedBorderColor      = Accent, unfocusedBorderColor    = Border,
+                    focusedTextColor        = TextPrimary, unfocusedTextColor  = TextPrimary,
+                    cursorColor             = Accent,
+                    errorBorderColor        = Red, errorContainerColor        = BgCard
                 )
             )
         } else {
@@ -84,29 +115,55 @@ fun OtpScreen(container: AppContainer, token: String, onAuthorized: () -> Unit) 
                 singleLine = true,
                 isError = state is AuthViewModel.UiState.Error,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = BgCard, unfocusedContainerColor = BgCard,
-                    focusedBorderColor = Accent, unfocusedBorderColor = Border,
-                    focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
-                    cursorColor = Accent, errorBorderColor = Red, errorContainerColor = BgCard
+                    focusedContainerColor   = BgCard, unfocusedContainerColor = BgCard,
+                    focusedBorderColor      = Accent, unfocusedBorderColor    = Border,
+                    focusedTextColor        = TextPrimary, unfocusedTextColor  = TextPrimary,
+                    cursorColor             = Accent,
+                    errorBorderColor        = Red, errorContainerColor        = BgCard
                 )
             )
         }
 
-        if (state is AuthViewModel.UiState.Error) {
-            Spacer(Modifier.height(6.dp))
-            Text((state as AuthViewModel.UiState.Error).msg, color = Red, style = MaterialTheme.typography.labelMedium)
+        // Ошибка
+        when (val s = state) {
+            is AuthViewModel.UiState.Error       ->
+                { Spacer(Modifier.height(6.dp)); Text(s.msg, color = Red, style = MaterialTheme.typography.labelMedium) }
+            is AuthViewModel.UiState.CodeExpired ->
+                { Spacer(Modifier.height(6.dp)); Text("Код устарел. Запросите новый.", color = Red, style = MaterialTheme.typography.labelMedium) }
+            else -> {}
         }
 
         Spacer(Modifier.height(20.dp))
 
         MaxXButton(
-            text = if (showPass) "Войти" else "Подтвердить",
+            text    = if (showPass) "Войти" else "Подтвердить",
             onClick = {
                 if (showPass) vm.sendPassword(passTrackId, password)
-                else vm.verifyOtp(token, code)
+                else vm.verifyOtp(currentToken, code)
             },
             loading = state == AuthViewModel.UiState.Loading,
-            enabled = (if (showPass) password.isNotEmpty() else code.length >= 4) && state != AuthViewModel.UiState.Loading
+            enabled = (if (showPass) password.isNotEmpty() else code.length >= 4)
+                && state != AuthViewModel.UiState.Loading
         )
+
+        // Кнопка повторного запроса (только для SMS кода)
+        if (!showPass) {
+            Spacer(Modifier.height(12.dp))
+            if (canResend) {
+                TextButton(onClick = {
+                    if (phone.isNotEmpty()) {
+                        canResend = false
+                        vm.requestOtp(phone)
+                    }
+                }) {
+                    Text("Запросить код повторно", color = Accent, style = MaterialTheme.typography.labelLarge)
+                }
+            } else {
+                Text(
+                    "Запросить повторно через ${countdown} сек",
+                    style = MaterialTheme.typography.labelMedium, color = TextMuted
+                )
+            }
+        }
     }
 }

@@ -9,17 +9,12 @@ import androidx.navigation.compose.*
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.screens.auth.PhoneScreen
 import ru.maxx.app.ui.screens.auth.OtpScreen
-import ru.maxx.app.ui.screens.chats.ChatsScreen
 import ru.maxx.app.ui.screens.chat.ChatScreen
-import ru.maxx.app.ui.screens.contacts.ContactsScreen
-import ru.maxx.app.ui.screens.channels.ChannelsScreen
-import ru.maxx.app.ui.screens.profile.ProfileScreen
-import ru.maxx.app.ui.screens.settings.SettingsScreen
-import ru.maxx.app.ui.screens.favorites.FavoritesScreen
+import ru.maxx.app.ui.screens.MainScreen
 
 sealed class Route(val path: String) {
     object Phone     : Route("phone")
-    object Otp       : Route("otp/{token}") { fun go(t: String) = "otp/$t" }
+    object Otp       : Route("otp/{token}/{phone}") { fun go(t: String, p: String) = "otp/$t/${java.net.URLEncoder.encode(p, "UTF-8")}" }
     object Chats     : Route("chats")
     object Chat      : Route("chat/{chatId}/{title}") {
         fun go(id: Long, title: String) = "chat/$id/${java.net.URLEncoder.encode(title, "UTF-8")}"
@@ -49,20 +44,26 @@ fun AppNavGraph(
     ) {
         composable(Route.Phone.path) {
             PhoneScreen(container = container,
-                onOtpRequested = { nav.navigate(Route.Otp.go(it)) })
+                onOtpRequested = { token, phone -> nav.navigate(Route.Otp.go(token, phone)) })
         }
-        composable(Route.Otp.path, listOf(navArgument("token") { type = NavType.StringType })) { back ->
+        composable(Route.Otp.path, listOf(
+                navArgument("token") { type = NavType.StringType },
+                navArgument("phone") { type = NavType.StringType; defaultValue = "" }
+            )) { back ->
             OtpScreen(container = container,
                 token = back.arguments?.getString("token") ?: "",
+                phone = java.net.URLDecoder.decode(back.arguments?.getString("phone") ?: "", "UTF-8"),
                 onAuthorized = { nav.navigate(Route.Chats.path) { popUpTo(0) { inclusive = true } } })
         }
         composable(Route.Chats.path) {
-            ChatsScreen(container = container,
-                onChatClick      = { id, t -> nav.navigate(Route.Chat.go(id, t)) },
-                onContactsClick  = { nav.navigate(Route.Contacts.path) },
-                onChannelsClick  = { nav.navigate(Route.Channels.path) },
-                onProfileClick   = { nav.navigate(Route.Profile.path) },
-                onFavoritesClick = { nav.navigate(Route.Favorites.path) })
+            MainScreen(
+                container   = container,
+                onChatClick = { id, t -> nav.navigate(Route.Chat.go(id, t)) },
+                onLogout    = {
+                    container.session.logout()
+                    nav.navigate(Route.Phone.path) { popUpTo(0) { inclusive = true } }
+                }
+            )
         }
         composable(Route.Chat.path, listOf(
             navArgument("chatId") { type = NavType.LongType },
@@ -72,32 +73,6 @@ fun AppNavGraph(
                 chatId = back.arguments?.getLong("chatId") ?: 0L,
                 title  = java.net.URLDecoder.decode(back.arguments?.getString("title") ?: "", "UTF-8"),
                 onBack = { nav.popBackStack() })
-        }
-        composable(Route.Contacts.path) {
-            ContactsScreen(container = container,
-                onBack = { nav.popBackStack() },
-                onContactClick = { id, t -> nav.navigate(Route.Chat.go(id, t)) })
-        }
-        composable(Route.Channels.path) {
-            ChannelsScreen(container = container,
-                onBack = { nav.popBackStack() },
-                onChannelClick = { id, t -> nav.navigate(Route.Chat.go(id, t)) })
-        }
-        composable(Route.Profile.path) {
-            ProfileScreen(container = container,
-                onBack          = { nav.popBackStack() },
-                onSettingsClick = { nav.navigate(Route.Settings.path) },
-                onFavoritesClick = { nav.navigate(Route.Favorites.path) },
-                onLogout = {
-                    container.session.logout()
-                    nav.navigate(Route.Phone.path) { popUpTo(0) { inclusive = true } }
-                })
-        }
-        composable(Route.Settings.path) {
-            SettingsScreen(container = container, onBack = { nav.popBackStack() })
-        }
-        composable(Route.Favorites.path) {
-            FavoritesScreen(container = container, onBack = { nav.popBackStack() })
         }
     }
 }

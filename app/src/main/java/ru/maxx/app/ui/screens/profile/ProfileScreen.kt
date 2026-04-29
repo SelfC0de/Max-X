@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.components.*
-import ru.maxx.app.ui.screens.chats.BottomNavBar
 import ru.maxx.app.ui.theme.*
 
 class ProfileViewModel(private val container: AppContainer) : ViewModel() {
@@ -100,14 +99,9 @@ fun ProfileScreen(
         snackbarHost = { SnackbarHost(snackbar) },
         topBar = {
             MaxXTopBar("Профиль", actions = {
-                IconButton(onClick = onSettingsClick) {
-                    Icon(Icons.Outlined.Settings, null, tint = Accent)
-                }
+
             })
         },
-        bottomBar = {
-            BottomNavBar(selected = 3, onChats = onBack, onContacts = {}, onChannels = {}, onProfile = {}, onFab = {})
-        }
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState())) {
 

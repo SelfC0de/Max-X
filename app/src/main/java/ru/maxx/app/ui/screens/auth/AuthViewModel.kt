@@ -19,6 +19,7 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
         data class OtpSent(val token: String) : UiState()
         data class PasswordRequired(val trackId: String, val hint: String?) : UiState()
         object Success : UiState()
+        object CodeExpired : UiState()
         data class Error(val msg: String) : UiState()
     }
 
@@ -91,6 +92,10 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
                         }
                         is SessionManager.AuthState.PasswordRequired -> {
                             _state.value = UiState.PasswordRequired(auth.trackId, auth.hint)
+                            authWatchJob?.cancel()
+                        }
+                        is SessionManager.AuthState.CodeExpired -> {
+                            _state.value = UiState.CodeExpired
                             authWatchJob?.cancel()
                         }
                         is SessionManager.AuthState.Error -> {

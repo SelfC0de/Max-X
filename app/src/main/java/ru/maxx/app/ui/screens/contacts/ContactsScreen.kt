@@ -56,9 +56,12 @@ fun ContactsScreen(container: AppContainer, onBack: () -> Unit, onContactClick: 
     }
 
     Scaffold(containerColor = BgPrimary, topBar = {
-        MaxXTopBar("Контакты", onBack = onBack)
+        MaxXTopBar("Контакты")  // onBack не нужен — таб, не отдельный экран
     }) { pad ->
-        LazyColumn(Modifier.fillMaxSize().padding(pad)) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(pad),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
             item {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },

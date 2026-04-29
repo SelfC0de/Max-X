@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -131,6 +132,7 @@ fun ChatsScreen(
 
     Scaffold(
         containerColor = BgPrimary,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) { MaxXSnackbar(it.visuals.message) } },
         topBar = {
             Column {
@@ -153,9 +155,7 @@ fun ChatsScreen(
                             IconButton(onClick = onFavoritesClick) {
                                 Icon(Icons.Default.Bookmark, null, tint = TextMuted)
                             }
-                            IconButton(onClick = {}) {
-                                Icon(Icons.Default.Edit, null, tint = TextMuted)
-                            }
+
                         })
                     }
                 }
@@ -170,14 +170,7 @@ fun ChatsScreen(
                 HorizontalDivider(color = Border, thickness = 0.5.dp)
             }
         },
-        bottomBar = {
-            BottomNavBar(
-                selected = 0,
-                onChats = {}, onContacts = onContactsClick,
-                onChannels = onChannelsClick, onProfile = onProfileClick,
-                onFab = { /* TODO: new chat picker */ }
-            )
-        }
+
     ) { pad ->
         if (loading && chats.isEmpty()) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) {
@@ -354,7 +347,7 @@ fun BottomNavBar(
     Column {
         HorizontalDivider(color = Border, thickness = 0.5.dp)
         Row(
-            modifier = Modifier.fillMaxWidth().height(62.dp).background(BgSecondary)
+            modifier = Modifier.fillMaxWidth().height(72.dp).background(BgSecondary)
                 .navigationBarsPadding().padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceAround
@@ -362,10 +355,10 @@ fun BottomNavBar(
             NavItem(Icons.Filled.Chat, Icons.Outlined.ChatBubbleOutline, "Чаты", selected == 0, onChats)
             NavItem(Icons.Filled.People, Icons.Outlined.PeopleOutline, "Контакты", selected == 1, onContacts)
             FloatingActionButton(
-                onClick = onFab, modifier = Modifier.size(46.dp),
+                onClick = onFab, modifier = Modifier.size(52.dp),
                 containerColor = Accent, contentColor = BgSecondary,
                 elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
-            ) { Icon(Icons.Default.Add, null, modifier = Modifier.size(22.dp)) }
+            ) { Icon(Icons.Default.Add, null, modifier = Modifier.size(26.dp)) }
             NavItem(Icons.Filled.Campaign, Icons.Outlined.Campaign, "Каналы", selected == 2, onChannels)
             NavItem(Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle, "Профиль", selected == 3, onProfile)
         }
@@ -374,11 +367,13 @@ fun BottomNavBar(
 
 @Composable
 private fun NavItem(iconOn: ImageVector, iconOff: ImageVector, label: String, selected: Boolean, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.width(58.dp)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(1.dp)) {
-            Icon(if (selected) iconOn else iconOff, label, tint = if (selected) Accent else TextMuted, modifier = Modifier.size(23.dp))
-            Text(label, fontSize = 9.sp, color = if (selected) Accent else TextMuted)
-        }
+    Column(
+        modifier = Modifier.width(64.dp).clickable(onClick = onClick).padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Icon(if (selected) iconOn else iconOff, label, tint = if (selected) Accent else TextMuted, modifier = Modifier.size(26.dp))
+        Text(label, fontSize = 10.sp, color = if (selected) Accent else TextMuted, fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Medium else androidx.compose.ui.text.font.FontWeight.Normal)
     }
 }
 

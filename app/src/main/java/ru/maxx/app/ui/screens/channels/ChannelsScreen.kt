@@ -3,6 +3,7 @@ package ru.maxx.app.ui.screens.channels
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -45,11 +46,14 @@ fun ChannelsScreen(container: AppContainer, onBack: () -> Unit, onChannelClick: 
     val channels by vm.channels.collectAsState()
     val loading by vm.loading.collectAsState()
 
-    Scaffold(containerColor = BgPrimary, topBar = { MaxXTopBar("Каналы", onBack = onBack) }) { pad ->
+    Scaffold(containerColor = BgPrimary, topBar = { MaxXTopBar("Каналы") }) { pad ->
         if (loading) {
             Box(Modifier.fillMaxSize().padding(pad), Alignment.Center) { CircularProgressIndicator(color = Accent) }
         } else {
-            LazyColumn(Modifier.fillMaxSize().padding(pad)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(pad),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
                 items(channels, key = { it.id }) { ch ->
                     Row(
                         modifier = Modifier.fillMaxWidth().clickable { onChannelClick(ch.id, ch.title) }

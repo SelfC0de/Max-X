@@ -18,7 +18,7 @@ import ru.maxx.app.ui.components.MaxXButton
 import ru.maxx.app.ui.theme.*
 
 @Composable
-fun PhoneScreen(container: AppContainer, onOtpRequested: (String) -> Unit) {
+fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Unit) {
     val vm = remember { AuthViewModel(container) }
     val state by vm.state.collectAsState()
 
@@ -26,7 +26,7 @@ fun PhoneScreen(container: AppContainer, onOtpRequested: (String) -> Unit) {
 
     LaunchedEffect(state) {
         if (state is AuthViewModel.UiState.OtpSent) {
-            onOtpRequested((state as AuthViewModel.UiState.OtpSent).token)
+            onOtpRequested((state as AuthViewModel.UiState.OtpSent).token, phone)
             vm.clearError()
         }
     }
