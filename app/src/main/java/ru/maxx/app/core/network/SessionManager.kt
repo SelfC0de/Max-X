@@ -165,11 +165,31 @@ class SessionManager(
             MaxProtocol.Op.AUTH_VERIFY, MaxProtocol.Op.AUTH_CHATS -> {
                 Log.i(TAG, "AUTH_VERIFY/CHATS opcode=${pkt.opcode} cmd=${pkt.cmd} payload=${pkt.payload}")
                 if (pkt.cmd == MaxProtocol.CMD_OK) {
-                    val tok = pkt.payload["token"] as? String
+                    // Токен может быть в разных местах payload:
+                    // 1. payload["token"] — прямой
+                    // 2. payload["tokenAttrs"]["LOGIN"]["token"] — вложенный (реальный формат сервера)
+                    val tok: String? = pkt.payload["token"] as? String
+                        ?: run {
+                            val tokenAttrs = pkt.payload["tokenAttrs"] as? Map<*, *>
+                            val loginBlock = tokenAttrs?.get("LOGIN") as? Map<*, *>
+                            loginBlock?.get("token") as? String
+                        }
+
+                    // userId из profile.contact.id
+                    val userId: String? = (pkt.payload["userId"] ?: pkt.payload["id"])?.toString()
+                        ?: run {
+                            val profile = pkt.payload["profile"] as? Map<*, *>
+                            val contact = profile?.get("contact") as? Map<*, *>
+                            contact?.get("id")?.toString()
+                        }
+
+                    Log.i(TAG, "AUTH_VERIFY: extracted tok=${tok?.take(20)}... userId=$userId")
+
                     if (tok != null) {
                         prefs.setToken(tok)
-                        prefs.setUserId((pkt.payload["userId"] ?: pkt.payload["id"])?.toString())
+                        prefs.setUserId(userId)
                         socket.markAuthorized()
+                        Log.i(TAG, "AUTH_VERIFY: SUCCESS — token saved, userId=$userId")
                         _authState.value = AuthState.Authenticated
                     } else if (pkt.payload["passwordChallenge"] != null) {
                         val ch = pkt.payload["passwordChallenge"] as? Map<*, *>
@@ -177,6 +197,9 @@ class SessionManager(
                             trackId = ch?.get("trackId")?.toString() ?: "",
                             hint    = ch?.get("hint")?.toString()
                         )
+                    } else {
+                        Log.e(TAG, "AUTH_VERIFY: no token found in payload! keys=${pkt.payload.keys}")
+                        _authState.value = AuthState.Error("Не удалось получить токен авторизации")
                     }
                 } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
                     val errMsg = pkt.payload["message"]?.toString() ?: "Ошибка верификации"
