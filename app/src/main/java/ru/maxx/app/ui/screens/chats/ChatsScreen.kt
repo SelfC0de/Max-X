@@ -334,7 +334,3 @@ private fun buildLastText(chat: Chat, myUserId: Long): String {
         else -> msg.text
     }
 }
-
-// ─── Bottom nav ───────────────────────────────────────────────────────────────
-
-@Composable
