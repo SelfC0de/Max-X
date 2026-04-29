@@ -92,7 +92,10 @@ fun ProfileScreen(
         toast?.let { snackbar.showSnackbar(it, duration = SnackbarDuration.Short); vm.clearToast() }
     }
 
-    val userId = container.authPrefs.getUserId() ?: "—"
+    val userId    = container.authPrefs.getUserId() ?: "—"
+    val userPhone = container.authPrefs.getUserPhone() ?: "+7 *** ***-**-**"
+    val initials  = userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
+    val userName  = container.authPrefs.getUserName() ?: "Пользователь"
 
     Scaffold(
         containerColor = BgPrimary,
@@ -115,7 +118,7 @@ fun ProfileScreen(
                         modifier = Modifier.size(82.dp).clip(CircleShape)
                             .background(AccentDark).border(2.dp, Accent, CircleShape),
                         contentAlignment = Alignment.Center
-                    ) { Text("МВ", fontSize = 28.sp, fontWeight = FontWeight.Medium, color = Accent) }
+                    ) { Text(initials.ifEmpty { "?" }, fontSize = 28.sp, fontWeight = FontWeight.Medium, color = Accent) }
                     // E2E значок
                     if (e2eEnabled) {
                         Box(
@@ -126,8 +129,8 @@ fun ProfileScreen(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("Максим Власов", style = MaterialTheme.typography.titleMedium)
-                Text("+7 912 345-67-89", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                Text(userName, style = MaterialTheme.typography.titleMedium)
+                Text(userPhone, style = MaterialTheme.typography.bodySmall, color = TextMuted)
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = {},

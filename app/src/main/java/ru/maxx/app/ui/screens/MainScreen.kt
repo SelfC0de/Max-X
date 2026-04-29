@@ -1,9 +1,12 @@
 package ru.maxx.app.ui.screens
 
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -12,11 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.clickable
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.screens.chats.ChatsScreen
 import ru.maxx.app.ui.screens.contacts.ContactsScreen
@@ -32,7 +34,7 @@ fun MainScreen(
     onChatClick: (Long, String) -> Unit,
     onLogout: () -> Unit
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab  by remember { mutableIntStateOf(0) }
     var showSettings  by remember { mutableStateOf(false) }
     var showFavorites by remember { mutableStateOf(false) }
 
@@ -49,7 +51,10 @@ fun MainScreen(
         containerColor = BgPrimary,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            MainBottomBar(selected = selectedTab, onSelect = { selectedTab = it })
+            MaxXBottomBar(
+                selected = selectedTab,
+                onSelect = { selectedTab = it }
+            )
         }
     ) { pad ->
         Box(Modifier.fillMaxSize().padding(pad)) {
@@ -63,9 +68,9 @@ fun MainScreen(
                     onFavoritesClick = { showFavorites = true }
                 )
                 1 -> ContactsScreen(
-                    container       = container,
-                    onBack          = { selectedTab = 0 },
-                    onContactClick  = onChatClick
+                    container      = container,
+                    onBack         = { selectedTab = 0 },
+                    onContactClick = onChatClick
                 )
                 2 -> ChannelsScreen(
                     container      = container,
@@ -84,63 +89,85 @@ fun MainScreen(
     }
 }
 
+// Таббар точно как в оригинале MAX
 @Composable
-private fun MainBottomBar(selected: Int, onSelect: (Int) -> Unit) {
+private fun MaxXBottomBar(selected: Int, onSelect: (Int) -> Unit) {
     Column {
         HorizontalDivider(color = Border, thickness = 0.5.dp)
-        Row(
+        NavigationBar(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(72.dp)
-                .background(BgSecondary)
-                .navigationBarsPadding()
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceAround
+                .navigationBarsPadding(),
+            containerColor = BgSecondary,
+            tonalElevation = 0.dp
         ) {
-            MainNavItem(Icons.Filled.Chat, Icons.Outlined.ChatBubbleOutline, "Чаты",       selected == 0) { onSelect(0) }
-            MainNavItem(Icons.Filled.People, Icons.Outlined.PeopleOutline,   "Контакты",   selected == 1) { onSelect(1) }
-            // FAB в центре
-            FloatingActionButton(
-                onClick = {},
-                modifier      = Modifier.size(52.dp),
-                containerColor = Accent,
-                contentColor   = BgSecondary,
-                elevation      = FloatingActionButtonDefaults.elevation(0.dp, 0.dp)
-            ) { Icon(Icons.Default.Add, null, modifier = Modifier.size(26.dp)) }
-            MainNavItem(Icons.Filled.Campaign, Icons.Outlined.Campaign,          "Каналы", selected == 2) { onSelect(2) }
-            MainNavItem(Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle, "Профиль", selected == 3) { onSelect(3) }
+            // Чаты
+            NavBarItem(
+                icon     = Icons.Filled.Chat,
+                iconOff  = Icons.Outlined.ChatBubbleOutline,
+                label    = "Чаты",
+                selected = selected == 0,
+                onClick  = { onSelect(0) }
+            )
+            // Контакты
+            NavBarItem(
+                icon     = Icons.Filled.People,
+                iconOff  = Icons.Outlined.PeopleOutline,
+                label    = "Контакты",
+                selected = selected == 1,
+                onClick  = { onSelect(1) }
+            )
+            // Каналы
+            NavBarItem(
+                icon     = Icons.Filled.Campaign,
+                iconOff  = Icons.Outlined.Campaign,
+                label    = "Каналы",
+                selected = selected == 2,
+                onClick  = { onSelect(2) }
+            )
+            // Профиль
+            NavBarItem(
+                icon     = Icons.Filled.AccountCircle,
+                iconOff  = Icons.Outlined.AccountCircle,
+                label    = "Профиль",
+                selected = selected == 3,
+                onClick  = { onSelect(3) }
+            )
         }
     }
 }
 
 @Composable
-private fun MainNavItem(
-    iconOn: androidx.compose.ui.graphics.vector.ImageVector,
-    iconOff: androidx.compose.ui.graphics.vector.ImageVector,
+private fun RowScope.NavBarItem(
+    icon: ImageVector,
+    iconOff: ImageVector,
     label: String,
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .width(64.dp)
-            .clickable(onClick = onClick)
-            .padding(vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        Icon(
-            imageVector = if (selected) iconOn else iconOff,
-            contentDescription = label,
-            tint     = if (selected) Accent else TextMuted,
-            modifier = Modifier.size(26.dp)
+    NavigationBarItem(
+        selected = selected,
+        onClick  = onClick,
+        icon = {
+            Icon(
+                imageVector = if (selected) icon else iconOff,
+                contentDescription = label,
+                modifier = Modifier.size(26.dp)
+            )
+        },
+        label = {
+            Text(
+                text       = label,
+                fontSize   = 11.sp,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        },
+        colors = NavigationBarItemDefaults.colors(
+            selectedIconColor   = Accent,
+            selectedTextColor   = Accent,
+            unselectedIconColor = TextMuted,
+            unselectedTextColor = TextMuted,
+            indicatorColor      = AccentDark
         )
-        Text(
-            text       = label,
-            fontSize   = 10.sp,
-            color      = if (selected) Accent else TextMuted,
-            fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal
-        )
-    }
+    )
 }

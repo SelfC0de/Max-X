@@ -189,8 +189,18 @@ class SessionManager(
                     if (tok != null) {
                         prefs.setToken(tok)
                         prefs.setUserId(userId)
+                        // Сохраняем имя и телефон из profile.contact
+                        val contact = (pkt.payload["profile"] as? Map<*, *>)?.get("contact") as? Map<*, *>
+                        val names   = contact?.get("names") as? List<*>
+                        val nameMap = names?.firstOrNull() as? Map<*, *>
+                        val firstName = nameMap?.get("firstName")?.toString() ?: ""
+                        val lastName  = nameMap?.get("lastName")?.toString() ?: ""
+                        val fullName  = listOf(firstName, lastName).filter { it.isNotBlank() && it != "Deleted" }.joinToString(" ")
+                        if (fullName.isNotBlank()) prefs.setUserName(fullName)
+                        val phone = contact?.get("phone")?.toString()
+                        if (!phone.isNullOrBlank()) prefs.setUserPhone("+$phone".replace("++", "+"))
                         socket.markAuthorized()
-                        Log.i(TAG, "AUTH_VERIFY: SUCCESS — token saved, userId=$userId, loading chats...")
+                        Log.i(TAG, "AUTH_VERIFY: SUCCESS — token saved, userId=$userId, name=$fullName, loading chats...")
                         // Загружаем чаты сразу с новым токеном (не через prefs — он может не успеть)
                         scope.launch { authenticate(tok) }
                         _authState.value = AuthState.Authenticated
@@ -211,6 +221,11 @@ class SessionManager(
                         ?: "Ошибка верификации"
                     val errCode = pkt.payload["code"]?.toString() ?: ""
                     Log.e(TAG, "AUTH_VERIFY ERROR code=$errCode msg=$errMsg full=${pkt.payload}")
+                    // proto.state = сервер уже обработал AUTH_CHATS и шлёт дубль — игнорируем
+                    if (errCode == "proto.state" || errMsg.contains("proto.state") || errMsg.contains("NEW session")) {
+                        Log.w(TAG, "Ignoring proto.state error — already authenticated")
+                        return
+                    }
                     // Код устарел / неверен — предлагаем запросить снова
                     val isExpired = errMsg.contains("устар", ignoreCase = true)
                         || errMsg.contains("expired", ignoreCase = true)

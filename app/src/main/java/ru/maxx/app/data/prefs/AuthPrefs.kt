@@ -20,6 +20,8 @@ class AuthPrefs(private val ctx: Context) {
 
     private object K {
         const val TOKEN      = "token"
+        const val USER_NAME  = "user_name"
+        const val USER_PHONE = "user_phone"
         const val SPOOF_DONE = "spoof_setup_done"
         const val USER_ID    = "user_id"
         const val MT_INST    = "mt_instance_id"
@@ -35,6 +37,11 @@ class AuthPrefs(private val ctx: Context) {
     fun setUserId(v: String?)      { sp.edit { if (v != null) putString(K.USER_ID, v) else remove(K.USER_ID) } }
     fun setMtInstanceId(v: String) { sp.edit { putString(K.MT_INST, v) } }
     fun setClientSessionId(v: Int) { sp.edit { putInt(K.CLIENT_SID, v) } }
+    fun getUserName():  String? = sp.getString(K.USER_NAME, null)
+    fun getUserPhone(): String? = sp.getString(K.USER_PHONE, null)
+    fun setUserName(n: String)  = sp.edit { putString(K.USER_NAME, n) }
+    fun setUserPhone(p: String) = sp.edit { putString(K.USER_PHONE, p) }
+
     fun isSpoofSetupDone(): Boolean = sp.getBoolean(K.SPOOF_DONE, false)
     fun markSpoofSetupDone() = sp.edit { putBoolean(K.SPOOF_DONE, true) }
 
