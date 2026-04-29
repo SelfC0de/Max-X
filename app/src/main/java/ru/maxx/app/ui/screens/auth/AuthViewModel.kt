@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.dropWhile
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import ru.maxx.app.core.network.SessionManager
@@ -76,7 +77,30 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
     fun verifyOtp(token: String, code: String) {
         if (_state.value == UiState.Loading) return
         _state.value = UiState.Loading
-        watchAuthState()
+        // watchAuthState слушает с текущего состояния — пропускаем PhoneVerification,
+        // ждём только следующих состояний: Authenticated / PasswordRequired / Error
+        authWatchJob?.cancel()
+        authWatchJob = viewModelScope.launch {
+            container.session.authState
+                .dropWhile { it is SessionManager.AuthState.PhoneVerification }
+                .collect { auth ->
+                    when (auth) {
+                        is SessionManager.AuthState.Authenticated -> {
+                            _state.value = UiState.Success
+                            authWatchJob?.cancel()
+                        }
+                        is SessionManager.AuthState.PasswordRequired -> {
+                            _state.value = UiState.PasswordRequired(auth.trackId, auth.hint)
+                            authWatchJob?.cancel()
+                        }
+                        is SessionManager.AuthState.Error -> {
+                            _state.value = UiState.Error(auth.msg)
+                            authWatchJob?.cancel()
+                        }
+                        else -> {}
+                    }
+                }
+        }
         viewModelScope.launch {
             try { container.session.verifyOtp(token, code) }
             catch (e: Exception) { authWatchJob?.cancel(); _state.value = UiState.Error(e.message ?: "Ошибка") }
