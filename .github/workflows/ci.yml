@@ -32,9 +32,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Build Release APK (unsigned)
-        run: ./gradlew assembleRelease --no-daemon
-        env:
-          GRADLE_OPTS: "-Xmx2g -Dorg.gradle.daemon=false"
+        run: ./gradlew assembleRelease --no-daemon --stacktrace
 
       - name: Rename APK → Max-X.apk
         run: |
