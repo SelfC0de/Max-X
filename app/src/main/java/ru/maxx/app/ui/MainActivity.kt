@@ -40,7 +40,12 @@ class MainActivity : ComponentActivity() {
         }
 
         val container = (application as MaxXApp).container
-        val start = if (container.authPrefs.getToken() != null) Route.Chats.path else Route.Phone.path
+        val spoofDone = container.authPrefs.isSpoofSetupDone()
+        val start = when {
+            container.authPrefs.getToken() != null -> Route.Chats.path
+            !spoofDone -> Route.SpoofSetup.path
+            else -> Route.Phone.path
+        }
 
         setContent {
             MaxXTheme {

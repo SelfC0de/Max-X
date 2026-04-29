@@ -25,6 +25,7 @@ class SessionManager(
         data class PhoneVerification(val token: String) : AuthState()
         data class PasswordRequired(val trackId: String, val hint: String?) : AuthState()
         object Authenticated : AuthState()
+        object CodeExpired : AuthState()   // код устарел — нужно запросить снова
         data class Error(val msg: String) : AuthState()
     }
 
@@ -189,7 +190,9 @@ class SessionManager(
                         prefs.setToken(tok)
                         prefs.setUserId(userId)
                         socket.markAuthorized()
-                        Log.i(TAG, "AUTH_VERIFY: SUCCESS — token saved, userId=$userId")
+                        Log.i(TAG, "AUTH_VERIFY: SUCCESS — token saved, userId=$userId, loading chats...")
+                        // Загружаем чаты сразу с новым токеном (не через prefs — он может не успеть)
+                        scope.launch { authenticate(tok) }
                         _authState.value = AuthState.Authenticated
                     } else if (pkt.payload["passwordChallenge"] != null) {
                         val ch = pkt.payload["passwordChallenge"] as? Map<*, *>
@@ -202,9 +205,23 @@ class SessionManager(
                         _authState.value = AuthState.Error("Не удалось получить токен авторизации")
                     }
                 } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
-                    val errMsg = pkt.payload["message"]?.toString() ?: "Ошибка верификации"
-                    Log.e(TAG, "AUTH_VERIFY ERROR: $errMsg full=${pkt.payload}")
-                    _authState.value = AuthState.Error(errMsg)
+                    val errMsg = pkt.payload["message"]?.toString()
+                        ?: pkt.payload["error"]?.toString()
+                        ?: pkt.payload["reason"]?.toString()
+                        ?: "Ошибка верификации"
+                    val errCode = pkt.payload["code"]?.toString() ?: ""
+                    Log.e(TAG, "AUTH_VERIFY ERROR code=$errCode msg=$errMsg full=${pkt.payload}")
+                    // Код устарел / неверен — предлагаем запросить снова
+                    val isExpired = errMsg.contains("устар", ignoreCase = true)
+                        || errMsg.contains("expired", ignoreCase = true)
+                        || errMsg.contains("invalid", ignoreCase = true)
+                        || errCode == "VERIFY_CODE_EXPIRED"
+                        || errCode == "VERIFY_CODE_INVALID"
+                    if (isExpired) {
+                        _authState.value = AuthState.CodeExpired
+                    } else {
+                        _authState.value = AuthState.Error(errMsg)
+                    }
                 }
             }
         }

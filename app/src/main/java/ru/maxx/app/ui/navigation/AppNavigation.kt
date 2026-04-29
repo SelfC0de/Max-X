@@ -8,11 +8,13 @@ import androidx.navigation.*
 import androidx.navigation.compose.*
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.screens.auth.PhoneScreen
+import ru.maxx.app.ui.screens.auth.SpoofSetupScreen
 import ru.maxx.app.ui.screens.auth.OtpScreen
 import ru.maxx.app.ui.screens.chat.ChatScreen
 import ru.maxx.app.ui.screens.MainScreen
 
 sealed class Route(val path: String) {
+    object SpoofSetup : Route("spoof_setup")
     object Phone     : Route("phone")
     object Otp       : Route("otp/{token}/{phone}") { fun go(t: String, p: String) = "otp/$t/${java.net.URLEncoder.encode(p, "UTF-8")}" }
     object Chats     : Route("chats")
@@ -42,6 +44,12 @@ fun AppNavGraph(
         enterTransition = { slideIn }, exitTransition = { slideOut },
         popEnterTransition = { popIn }, popExitTransition = { popOut }
     ) {
+        composable(Route.SpoofSetup.path) {
+            SpoofSetupScreen(
+                spoofing = container.spoofing,
+                onApplied = { nav.navigate(Route.Phone.path) { popUpTo(Route.SpoofSetup.path) { inclusive = true } } }
+            )
+        }
         composable(Route.Phone.path) {
             PhoneScreen(container = container,
                 onOtpRequested = { token, phone -> nav.navigate(Route.Otp.go(token, phone)) })

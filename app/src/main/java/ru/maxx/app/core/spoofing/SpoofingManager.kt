@@ -27,6 +27,7 @@ class SpoofingManager(private val ctx: Context) {
 
     private object K {
         val ENABLED = booleanPreferencesKey("enabled")
+        val SETUP_DONE = booleanPreferencesKey("setup_done")
         val DEVICE_ID = stringPreferencesKey("device_id")
         val DEVICE_NAME = stringPreferencesKey("device_name")
         val OS_VER = stringPreferencesKey("os_ver")
@@ -41,8 +42,12 @@ class SpoofingManager(private val ctx: Context) {
     suspend fun getOrGenerate(): SpoofProfile {
         val p = ctx.spoofStore.data.first()
         return if (p[K.ENABLED] == true) {
+            // deviceId всегда генерируется заново при каждом подключении
+            // чтобы не использовать deviceId другого пользователя
+            val freshId = genId()
+            ctx.spoofStore.edit { it[K.DEVICE_ID] = freshId }
             SpoofProfile(
-                p[K.DEVICE_ID] ?: genId(), p[K.DEVICE_NAME] ?: PRESETS[0].deviceName,
+                freshId, p[K.DEVICE_NAME] ?: PRESETS[0].deviceName,
                 p[K.OS_VER] ?: PRESETS[0].osVersion, p[K.APP_VER] ?: PRESETS[0].appVersion,
                 p[K.SCREEN] ?: PRESETS[0].screen, p[K.TZ] ?: PRESETS[0].timezone,
                 p[K.LOCALE] ?: "ru", p[K.ARCH] ?: "arm64-v8a", p[K.BUILD] ?: 6686
@@ -60,6 +65,19 @@ class SpoofingManager(private val ctx: Context) {
             p[K.ARCH] = preset.arch; p[K.BUILD] = preset.buildNumber
         }
         return preset
+    }
+
+    fun isSetupDone(): Boolean = false  // проверка через DataStore — async, не используем здесь
+
+    suspend fun saveWithSetupDone(profile: SpoofProfile) {
+        ctx.spoofStore.edit { p ->
+            p[K.SETUP_DONE] = true
+            p[K.DEVICE_ID] = profile.deviceId; p[K.DEVICE_NAME] = profile.deviceName
+            p[K.OS_VER] = profile.osVersion; p[K.APP_VER] = profile.appVersion
+            p[K.SCREEN] = profile.screen; p[K.TZ] = profile.timezone
+            p[K.LOCALE] = profile.locale; p[K.ARCH] = profile.arch
+            p[K.BUILD] = profile.buildNumber; p[K.ENABLED] = true
+        }
     }
 
     suspend fun save(profile: SpoofProfile) {
