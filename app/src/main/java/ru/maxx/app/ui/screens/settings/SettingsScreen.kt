@@ -199,7 +199,7 @@ private fun ExpandableCard(
 
 @Composable
 private fun SettingsSwitchRow(title: String, subtitle: String?, checked: Boolean, showDivider: Boolean = true, onToggle: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyMedium)
             if (subtitle != null) Text(subtitle, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 1.dp))

@@ -93,16 +93,31 @@ class ExportService(private val ctx: Context) {
 
     private fun buildJson(msgs: List<Message>, title: String): String {
         val sb = StringBuilder()
-        val titleEsc = title.replace("\\", "\\\\").replace("\"", "\\\""); sb.append("{\"chat\":\"$titleEsc\",")
-        sb.append(""exportedAt":${System.currentTimeMillis()},")
-        sb.append(""messages":[")
+        val titleEsc = escJson(title)
+        sb.append("{")
+        sb.append("\"chat\":\"$titleEsc\",")
+        sb.append("\"exportedAt\":${System.currentTimeMillis()},")
+        sb.append("\"messages\":[")
         msgs.forEachIndexed { i, m ->
             if (i > 0) sb.append(",")
-            val textEsc = m.text.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n"); sb.append("{\"id\":${m.id},\"sender\":${m.senderId},\"text\":\"$textEsc\",\"time\":${m.time},\"edited\":${m.edited}}")
+            val textEsc = escJson(m.text)
+            sb.append("{")
+            sb.append("\"id\":${m.id},")
+            sb.append("\"sender\":${m.senderId},")
+            sb.append("\"text\":\"$textEsc\",")
+            sb.append("\"time\":${m.time},")
+            sb.append("\"edited\":${m.edited}")
+            sb.append("}")
         }
         sb.append("]}")
         return sb.toString()
     }
+
+    private fun escJson(s: String) = s
+        .replace("\\", "\\\\")
+        .replace("\"", "\\\"")
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
 
     private fun escHtml(s: String) = s
         .replace("&", "&amp;").replace("<", "&lt;")
