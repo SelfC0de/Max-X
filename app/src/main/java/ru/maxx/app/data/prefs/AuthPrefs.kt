@@ -20,6 +20,7 @@ class AuthPrefs(private val ctx: Context) {
 
     private object K {
         const val TOKEN      = "token"
+        const val SPOOF_DONE = "spoof_setup_done"
         const val USER_ID    = "user_id"
         const val MT_INST    = "mt_instance_id"
         const val CLIENT_SID = "client_session_id"
@@ -34,6 +35,9 @@ class AuthPrefs(private val ctx: Context) {
     fun setUserId(v: String?)      { sp.edit { if (v != null) putString(K.USER_ID, v) else remove(K.USER_ID) } }
     fun setMtInstanceId(v: String) { sp.edit { putString(K.MT_INST, v) } }
     fun setClientSessionId(v: Int) { sp.edit { putInt(K.CLIENT_SID, v) } }
+    fun isSpoofSetupDone(): Boolean = sp.getBoolean(K.SPOOF_DONE, false)
+    fun markSpoofSetupDone() = sp.edit { putBoolean(K.SPOOF_DONE, true) }
+
     fun clearAuth()                { sp.edit { remove(K.TOKEN); remove(K.USER_ID) } }
 
     // Flow обновляется при каждом setToken/clearAuth

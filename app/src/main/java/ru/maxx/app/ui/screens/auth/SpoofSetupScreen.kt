@@ -120,6 +120,7 @@ fun SpoofSetupScreen(
     // Диалог перезапуска
     if (showRestartDialog) {
         AlertDialog(
+            onDismissRequest = { showRestartDialog = false },
             containerColor = BgCard,
             title = { Text("Применить и перезапустить?", style = MaterialTheme.typography.titleMedium) },
             text  = { Text("Настройки спуфинга сохранены. Для применения требуется перезапуск приложения.", style = MaterialTheme.typography.bodyMedium) },
