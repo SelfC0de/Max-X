@@ -54,16 +54,22 @@ class SessionManager(
             "deviceId"        to profile.deviceId,
             "userAgent"       to spoofing.toHandshakePayload(profile)
         )
+        Log.i(TAG, ">>> HANDSHAKE deviceId=${profile.deviceId} mtId=$mtId csId=$csId")
+        Log.d(TAG, "    userAgent=${spoofing.toHandshakePayload(profile)}")
         socket.send(MaxProtocol.Op.HANDSHAKE, payload)
-        Log.d(TAG, "Handshake sent deviceId=${profile.deviceId}")
     }
 
     // requestOtp/verifyOtp: отправляем пакет, ответ приходит через handlePacket → _authState
     // НЕ используем sendAndAwait чтобы избежать двойной обработки одного пакета
     suspend fun requestOtp(phone: String): Boolean {
         if (!socket.state.value.let { it == MaxSocket.State.Connected || it == MaxSocket.State.Authorized }) {
-            if (!socket.connect()) return false
+            Log.i(TAG, "Not connected, connecting...")
+            if (!socket.connect()) {
+                Log.e(TAG, "Connection failed")
+                return false
+            }
         }
+        Log.i(TAG, ">>> AUTH_PHONE phone=$phone")
         socket.send(MaxProtocol.Op.AUTH_PHONE, mapOf("phone" to phone, "type" to "START_AUTH"))
         return true
     }
@@ -86,8 +92,13 @@ class SessionManager(
     }
 
     private fun handlePacket(pkt: MaxProtocol.Packet) {
+        // ── Полный лог каждого пакета для диагностики ──────────────────────
+        Log.d(TAG, "<<< PKT opcode=${pkt.opcode} cmd=${pkt.cmd} seq=${pkt.seq}")
+        Log.d(TAG, "    payload=${pkt.payload}")
+
         when (pkt.opcode) {
             MaxProtocol.Op.HANDSHAKE -> {
+                Log.i(TAG, "HANDSHAKE response: cmd=${pkt.cmd} payload=${pkt.payload}")
                 if (pkt.cmd == MaxProtocol.CMD_OK) {
                     val token = prefs.getToken()
                     if (token != null) {
@@ -95,9 +106,45 @@ class SessionManager(
                     } else {
                         _authState.value = AuthState.Unauthenticated
                     }
+                } else {
+                    // Сервер отклонил handshake
+                    val errMsg = pkt.payload["message"]?.toString()
+                        ?: pkt.payload["error"]?.toString()
+                        ?: "Handshake rejected cmd=${pkt.cmd}"
+                    Log.e(TAG, "HANDSHAKE ERROR: $errMsg")
+                    _authState.value = AuthState.Error("Ошибка подключения: $errMsg")
+                }
+            }
+            MaxProtocol.Op.AUTH_PHONE -> {
+                Log.i(TAG, "AUTH_PHONE response: cmd=${pkt.cmd} payload=${pkt.payload}")
+                when (pkt.cmd) {
+                    MaxProtocol.CMD_OK -> {
+                        val token = pkt.payload["token"]?.toString()
+                        if (token != null) {
+                            Log.i(TAG, "AUTH_PHONE OK: token=$token")
+                            _authState.value = AuthState.PhoneVerification(token)
+                        } else {
+                            Log.e(TAG, "AUTH_PHONE OK but no token in payload!")
+                            _authState.value = AuthState.Error("Нет токена в ответе сервера")
+                        }
+                    }
+                    MaxProtocol.CMD_ERROR -> {
+                        val errMsg = pkt.payload["message"]?.toString()
+                            ?: pkt.payload["error"]?.toString()
+                            ?: pkt.payload["reason"]?.toString()
+                            ?: "Неизвестная ошибка (code=${pkt.payload["code"]})"
+                        val errCode = pkt.payload["code"]?.toString() ?: ""
+                        Log.e(TAG, "AUTH_PHONE ERROR code=$errCode msg=$errMsg full=${pkt.payload}")
+                        _authState.value = AuthState.Error("$errMsg (код: $errCode)")
+                    }
+                    else -> {
+                        Log.w(TAG, "AUTH_PHONE unknown cmd=${pkt.cmd} payload=${pkt.payload}")
+                        _authState.value = AuthState.Error("Неожиданный ответ сервера: cmd=${pkt.cmd}")
+                    }
                 }
             }
             MaxProtocol.Op.AUTH_VERIFY, MaxProtocol.Op.AUTH_CHATS -> {
+                Log.i(TAG, "AUTH_VERIFY/CHATS opcode=${pkt.opcode} cmd=${pkt.cmd} payload=${pkt.payload}")
                 if (pkt.cmd == MaxProtocol.CMD_OK) {
                     val tok = pkt.payload["token"] as? String
                     if (tok != null) {
@@ -112,12 +159,10 @@ class SessionManager(
                             hint    = ch?.get("hint")?.toString()
                         )
                     }
-                }
-            }
-            MaxProtocol.Op.AUTH_PHONE -> {
-                if (pkt.cmd == MaxProtocol.CMD_OK) {
-                    val token = pkt.payload["token"]?.toString() ?: return
-                    _authState.value = AuthState.PhoneVerification(token)
+                } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
+                    val errMsg = pkt.payload["message"]?.toString() ?: "Ошибка верификации"
+                    Log.e(TAG, "AUTH_VERIFY ERROR: $errMsg full=${pkt.payload}")
+                    _authState.value = AuthState.Error(errMsg)
                 }
             }
         }
