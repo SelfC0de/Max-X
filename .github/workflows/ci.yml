@@ -34,10 +34,37 @@ jobs:
       - name: Build Release APK (unsigned)
         run: ./gradlew assembleRelease --no-daemon --stacktrace
 
-      - name: Rename APK → Max-X.apk
+      - name: Generate debug keystore for signing
         run: |
-          mkdir -p output
-          cp app/build/outputs/apk/release/app-release-unsigned.apk output/Max-X.apk
+          keytool -genkeypair \
+            -keystore maxx-release.jks \
+            -alias maxx \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -storepass maxxrelease \
+            -keypass maxxrelease \
+            -dname "CN=Max-X, OU=Dev, O=SelfCode, L=RU, S=RU, C=RU" \
+            -noprompt
+
+      - name: Sign APK
+        run: |
+          $JAVA_HOME/bin/jarsigner \
+            -verbose \
+            -sigalg SHA256withRSA \
+            -digestalg SHA-256 \
+            -keystore maxx-release.jks \
+            -storepass maxxrelease \
+            -keypass maxxrelease \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            maxx
+
+      - name: Align and rename APK → Max-X.apk
+        run: |
+          $ANDROID_HOME/build-tools/$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)/zipalign \
+            -v 4 \
+            app/build/outputs/apk/release/app-release-unsigned.apk \
+            Max-X.apk
 
       - name: Create GitHub Pre-release
         uses: softprops/action-gh-release@v2
@@ -46,6 +73,6 @@ jobs:
           name: "Max-X ${{ github.event.inputs.version_tag }}"
           body: ${{ github.event.inputs.release_notes }}
           prerelease: true
-          files: output/Max-X.apk
+          files: Max-X.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
