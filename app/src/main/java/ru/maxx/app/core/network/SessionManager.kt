@@ -2,6 +2,7 @@ package ru.maxx.app.core.network
 
 import android.util.Log
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.*
 import ru.maxx.app.core.protocol.MaxProtocol
 import ru.maxx.app.core.spoofing.SpoofingManager
@@ -62,14 +63,31 @@ class SessionManager(
     // requestOtp/verifyOtp: отправляем пакет, ответ приходит через handlePacket → _authState
     // НЕ используем sendAndAwait чтобы избежать двойной обработки одного пакета
     suspend fun requestOtp(phone: String): Boolean {
-        if (!socket.state.value.let { it == MaxSocket.State.Connected || it == MaxSocket.State.Authorized }) {
+        val state = socket.state.value
+        Log.i(TAG, "requestOtp: socket.state=$state")
+
+        if (state != MaxSocket.State.Connected && state != MaxSocket.State.Authorized) {
             Log.i(TAG, "Not connected, connecting...")
-            if (!socket.connect()) {
-                Log.e(TAG, "Connection failed")
-                return false
-            }
+            socket.connect()
         }
-        Log.i(TAG, ">>> AUTH_PHONE phone=$phone")
+
+        // Ждём пока handshake завершится (authState станет Unauthenticated или Authenticated)
+        // Таймаут 10 секунд
+        val ready = withTimeoutOrNull(10_000L) {
+            authState.first { it is AuthState.Unauthenticated || it is AuthState.Authenticated || it is AuthState.Error }
+        }
+
+        if (ready == null) {
+            Log.e(TAG, "requestOtp: timeout waiting for handshake")
+            _authState.value = AuthState.Error("Не удалось подключиться к серверу")
+            return false
+        }
+        if (ready is AuthState.Error) {
+            Log.e(TAG, "requestOtp: handshake error: ${ready.msg}")
+            return false
+        }
+
+        Log.i(TAG, ">>> AUTH_PHONE phone=$phone (handshake OK, state=$ready)")
         socket.send(MaxProtocol.Op.AUTH_PHONE, mapOf("phone" to phone, "type" to "START_AUTH"))
         return true
     }
@@ -104,6 +122,7 @@ class SessionManager(
                     if (token != null) {
                         scope.launch { authenticate(token) }
                     } else {
+                        Log.i(TAG, "HANDSHAKE OK — no token, going Unauthenticated")
                         _authState.value = AuthState.Unauthenticated
                     }
                 } else {
