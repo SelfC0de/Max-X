@@ -93,9 +93,9 @@ fun ProfileScreen(
     }
 
     val userId    = container.authPrefs.getUserId() ?: "—"
+    val userName  = container.authPrefs.getUserName() ?: "Пользователь"
     val userPhone = container.authPrefs.getUserPhone() ?: "+7 *** ***-**-**"
     val initials  = userName.split(" ").mapNotNull { it.firstOrNull()?.toString() }.take(2).joinToString("")
-    val userName  = container.authPrefs.getUserName() ?: "Пользователь"
 
     Scaffold(
         containerColor = BgPrimary,

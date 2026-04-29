@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -332,5 +333,38 @@ private fun buildLastText(chat: Chat, myUserId: Long): String {
         msg.senderId == myUserId -> "Вы: ${msg.text}"
         chat.type != ChatType.PERSONAL && msg.senderName.isNotEmpty() -> "${msg.senderName}: ${msg.text}"
         else -> msg.text
+    }
+}
+
+@Composable
+fun MaxXSnackbar(message: String) {
+    Surface(
+        shape  = RoundedCornerShape(10.dp),
+        color  = BgCard,
+        tonalElevation = 4.dp,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text     = message,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            style    = MaterialTheme.typography.bodySmall,
+            color    = TextPrimary
+        )
+    }
+}
+
+fun formatChatTime(timeMs: Long): String {
+    if (timeMs == 0L) return ""
+    val now  = java.util.Calendar.getInstance()
+    val then = java.util.Calendar.getInstance().also { it.timeInMillis = timeMs }
+    return when {
+        now.get(java.util.Calendar.DAY_OF_YEAR) == then.get(java.util.Calendar.DAY_OF_YEAR) &&
+        now.get(java.util.Calendar.YEAR)        == then.get(java.util.Calendar.YEAR) ->
+            String.format("%02d:%02d", then.get(java.util.Calendar.HOUR_OF_DAY), then.get(java.util.Calendar.MINUTE))
+        now.get(java.util.Calendar.YEAR) == then.get(java.util.Calendar.YEAR) -> {
+            val months = arrayOf("янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек")
+            "${then.get(java.util.Calendar.DAY_OF_MONTH)} ${months[then.get(java.util.Calendar.MONTH)]}"
+        }
+        else -> "${then.get(java.util.Calendar.DAY_OF_MONTH)}.${String.format("%02d",then.get(java.util.Calendar.MONTH)+1)}.${then.get(java.util.Calendar.YEAR)%100}"
     }
 }
