@@ -36,10 +36,11 @@ fun PhoneScreen(container: AppContainer, onOtpRequested: (String, String) -> Uni
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Box(
-            modifier = Modifier.size(76.dp).background(AccentDark, RoundedCornerShape(22.dp)),
-            contentAlignment = Alignment.Center
-        ) { Text("MX", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = Accent) }
+        androidx.compose.foundation.Image(
+            painter = painterResource(id = ru.maxx.app.R.drawable.ic_launcher_logo),
+            contentDescription = "Max-X",
+            modifier = Modifier.size(96.dp).clip(RoundedCornerShape(22.dp))
+        )
 
         Spacer(Modifier.height(28.dp))
         Text("Max-X", style = MaterialTheme.typography.titleLarge)
