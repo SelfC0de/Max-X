@@ -161,7 +161,7 @@ fun ChatsScreen(
                     }
                 }
                 // Папки-фильтры
-                if (!showSearch && folders.isNotEmpty()) {
+                if (!showSearch) {
                     FolderTabs(
                         folders = folders,
                         selected = selectedFolder,
@@ -216,20 +216,48 @@ private fun FolderTabs(
     selected: ChatFolder?,
     onSelect: (ChatFolder?) -> Unit
 ) {
+    // Статические табы всегда показываются
+    data class StaticTab(val id: String, val label: String, val icon: ImageVector)
+    val staticTabs = listOf(
+        StaticTab("all",      "Все",           Icons.Default.AllInbox),
+        StaticTab("personal", "Личные",        Icons.Outlined.Person),
+        StaticTab("groups",   "Группы",        Icons.Outlined.Group),
+        StaticTab("channels", "Каналы",        Icons.Outlined.Campaign),
+        StaticTab("unread",   "Непрочитанные", Icons.Default.MarkChatUnread),
+    )
+
     LazyRow(
-        modifier = Modifier.fillMaxWidth().background(BgSecondary).height(38.dp),
-        contentPadding = PaddingValues(horizontal = 10.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier.fillMaxWidth().background(BgSecondary).height(34.dp),
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // "Все" таб
-        item {
-            FolderChip(label = "Все", icon = Icons.Default.AllInbox, selected = selected == null) { onSelect(null) }
-        }
-        items(folders, key = { it.id }) { folder ->
+        items(staticTabs, key = { it.id }) { tab ->
+            val isSelected = when (tab.id) {
+                "all"      -> selected == null
+                else       -> selected?.icon == tab.id || selected?.title?.lowercase() == tab.label.lowercase()
+            }
             FolderChip(
-                label = folder.title,
-                icon  = folderIcon(folder.icon),
+                label    = tab.label,
+                icon     = tab.icon,
+                selected = isSelected
+            ) {
+                if (tab.id == "all") {
+                    onSelect(null)
+                } else {
+                    val match = folders.find { f ->
+                        f.icon == tab.id || f.title.lowercase() == tab.label.lowercase()
+                    }
+                    onSelect(if (isSelected) null else (match ?: ChatFolder(tab.id.hashCode().toLong(), tab.label, tab.id, 0)))
+                }
+            }
+        }
+        // Пользовательские папки с сервера (если есть сверх стандартных)
+        val standardTitles = setOf("все", "личные", "группы", "каналы", "непрочитанные")
+        items(folders.filter { it.title.lowercase() !in standardTitles }, key = { it.id }) { folder ->
+            FolderChip(
+                label    = folder.title,
+                icon     = folderIcon(folder.icon),
                 selected = selected?.id == folder.id
             ) { onSelect(folder) }
         }
@@ -240,16 +268,16 @@ private fun FolderTabs(
 private fun FolderChip(label: String, icon: ImageVector, selected: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
-            .height(26.dp)
-            .clip(RoundedCornerShape(13.dp))
-            .background(if (selected) AccentDark else BgCard)
+            .height(24.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (selected) AccentDark else BgTertiary)
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp),
+            .padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
-        Icon(icon, null, tint = if (selected) Accent else TextMuted, modifier = Modifier.size(13.dp))
-        Text(label, fontSize = 11.sp, color = if (selected) Accent else TextMuted, fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal)
+        Icon(icon, null, tint = if (selected) Accent else TextMuted, modifier = Modifier.size(11.dp))
+        Text(label, fontSize = 10.sp, color = if (selected) Accent else TextMuted, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal)
     }
 }
 
@@ -266,6 +294,12 @@ private fun folderIcon(name: String): ImageVector = when (name) {
 
 @Composable
 private fun SearchBar(query: String, onQuery: (String) -> Unit, onClose: () -> Unit) {
+    Column {
+        Spacer(modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsTopHeight(androidx.compose.foundation.layout.WindowInsets.statusBars)
+            .background(BgSecondary)
+        )
     Row(
         modifier = Modifier.fillMaxWidth().height(52.dp).background(BgSecondary).padding(horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -286,6 +320,7 @@ private fun SearchBar(query: String, onQuery: (String) -> Unit, onClose: () -> U
         if (query.isNotEmpty()) {
             IconButton(onClick = { onQuery("") }) { Icon(Icons.Default.Clear, null, tint = TextMuted) }
         }
+    }
     }
 }
 

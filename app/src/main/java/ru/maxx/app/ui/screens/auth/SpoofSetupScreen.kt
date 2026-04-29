@@ -87,7 +87,8 @@ private fun genId(): String = ByteArray(8)
 @Composable
 fun SpoofSetupScreen(
     spoofing: SpoofingManager,
-    onApplied: () -> Unit
+    onApplied: () -> Unit,
+    onBack: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
 
@@ -173,11 +174,17 @@ fun SpoofSetupScreen(
                         .background(BgSecondary).statusBarsPadding().padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Outlined.Security, null, tint = Accent, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(10.dp))
+                    if (onBack != null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Outlined.ArrowBack, null, tint = Accent)
+                        }
+                    } else {
+                        Icon(Icons.Outlined.Security, null, tint = Accent, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(10.dp))
+                    }
                     Column {
                         Text("Настройки устройства", style = MaterialTheme.typography.titleSmall)
-                        Text("Установите один раз перед входом", fontSize = 11.sp, color = TextMuted)
+                        Text(if (onBack != null) "Редактирование профиля" else "Установите один раз перед входом", fontSize = 11.sp, color = TextMuted)
                     }
                 }
                 HorizontalDivider(color = Border, thickness = 0.5.dp)

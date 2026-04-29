@@ -41,7 +41,11 @@ fun MainScreen(
     var showSpoofSetup  by remember { mutableStateOf(false) }
 
     if (showSpoofSetup) {
-        SpoofSetupScreen(spoofing = container.spoofing, onApplied = { showSpoofSetup = false })
+        SpoofSetupScreen(
+            spoofing  = container.spoofing,
+            onApplied = { showSpoofSetup = false },
+            onBack    = { showSpoofSetup = false; showSettings = true }
+        )
         return
     }
     if (showSettings) {
