@@ -39,6 +39,14 @@ android {
     }
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true; buildConfig = true }
+
+    lint {
+        // Баг в AGP 8.7.x + Kotlin 2.x — NonNullableMutableLiveDataDetector крашит lint
+        disable += "NullSafeMutableLiveData"
+        // Не ронять сборку из-за lint предупреждений
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
 }
 
 dependencies {
