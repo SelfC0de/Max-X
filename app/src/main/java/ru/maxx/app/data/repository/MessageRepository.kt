@@ -93,4 +93,61 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
             }.trim()
         )
     }
+
+    suspend fun markUnread(chatId: Long): Boolean {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.READ_MESSAGES, mapOf(
+            "chatId" to chatId, "messageId" to 0L, "unread" to true
+        ))
+        return pkt?.cmd == MaxProtocol.CMD_OK
+    }
+
+    suspend fun searchMessages(chatId: Long, query: String): List<Message> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.MESSAGES_LOAD, mapOf(
+            "chatId" to chatId, "count" to 50, "searchQuery" to query
+        )) ?: return emptyList()
+        return (pkt.payload["messages"] as? List<*>)?.mapNotNull { parseMsg(it, chatId) } ?: emptyList()
+    }
+
+    suspend fun forwardMessage(fromChatId: Long, messageId: Long, toChatId: Long): Boolean {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.SEND_MESSAGE, mapOf(
+            "chatId" to toChatId,
+            "forwardChatId" to fromChatId,
+            "forwardMessageId" to messageId,
+            "cid" to System.currentTimeMillis()
+        ))
+        return pkt?.cmd == MaxProtocol.CMD_OK
+    }
+
+    suspend fun setAutoDelete(chatId: Long, seconds: Int): Boolean {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.EDIT_MESSAGE, mapOf(
+            "chatId" to chatId, "autoDeleteDuration" to seconds
+        ))
+        return pkt?.cmd == MaxProtocol.CMD_OK
+    }
+
+    suspend fun loadStickers(): List<Map<String, Any?>> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.MEDIA_STICKERS, emptyMap<String, Any?>())
+            ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        return (pkt.payload["packs"] as? List<Map<String, Any?>>) ?: emptyList()
+    }
+
+    suspend fun joinGroup(inviteLink: String): Boolean {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.JOIN_GROUP, mapOf("link" to inviteLink))
+        return pkt?.cmd == MaxProtocol.CMD_OK
+    }
+
+    suspend fun getGroupMembers(chatId: Long): List<Map<String, Any?>> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.GROUP_MEMBERS, mapOf("chatId" to chatId))
+            ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        return (pkt.payload["members"] as? List<Map<String, Any?>>) ?: emptyList()
+    }
+
+    suspend fun searchChannels(query: String): List<Map<String, Any?>> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.SEARCH_CHANNELS, mapOf("query" to query))
+            ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        return (pkt.payload["channels"] as? List<Map<String, Any?>>) ?: emptyList()
+    }
 }

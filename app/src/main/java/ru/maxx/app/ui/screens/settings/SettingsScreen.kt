@@ -112,6 +112,14 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                 SettingsToggle("Номер телефона", visLabel(phoneVis)) { showPhonePicker = true }
                 SettingsToggle("Статус «в сети»", visLabel(onlineVis)) { showOnlinePicker = true }
                 SettingsSwitch("Ссылка при пересылке", false) { }
+                SettingsSwitch(
+                    "Скрыть статус «печатает»",
+                    container.appPrefs.hideTypingStatus
+                ) { container.appPrefs.hideTypingStatus = it }
+                SettingsSwitch(
+                    "Автоматически отмечать прочитанным",
+                    container.appPrefs.autoMarkRead
+                ) { container.appPrefs.autoMarkRead = it }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -162,6 +170,89 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
             Spacer(Modifier.height(8.dp))
 
 
+
+            // Прокси
+            var proxyEnabled by remember { mutableStateOf(container.appPrefs.proxyEnabled) }
+            var showProxyDialog by remember { mutableStateOf(false) }
+            var proxyHost by remember { mutableStateOf(container.appPrefs.proxyHost) }
+            var proxyPort by remember { mutableStateOf(container.appPrefs.proxyPort.toString()) }
+            var proxyUser by remember { mutableStateOf(container.appPrefs.proxyUser) }
+            var proxyPass by remember { mutableStateOf(container.appPrefs.proxyPass) }
+
+            if (showProxyDialog) {
+                AlertDialog(
+                    onDismissRequest = { showProxyDialog = false },
+                    containerColor   = BgCard,
+                    title = { Text("SOCKS5 прокси", style = MaterialTheme.typography.titleSmall) },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(
+                                "Хост" to proxyHost, "Порт" to proxyPort,
+                                "Логин (необязательно)" to proxyUser, "Пароль (необязательно)" to proxyPass
+                            ).forEachIndexed { i, (label, value) ->
+                                OutlinedTextField(
+                                    value = when(i) { 0->proxyHost; 1->proxyPort; 2->proxyUser; else->proxyPass },
+                                    onValueChange = { v -> when(i) { 0->proxyHost=v; 1->proxyPort=v; 2->proxyUser=v; else->proxyPass=v } },
+                                    label = { Text(label, fontSize = 11.sp) },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(8.dp), singleLine = true,
+                                    textStyle = LocalTextStyle.current.copy(fontSize = 13.sp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedContainerColor = BgSecondary, unfocusedContainerColor = BgSecondary,
+                                        focusedBorderColor = Accent, unfocusedBorderColor = Border,
+                                        focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary,
+                                        cursorColor = Accent, focusedLabelColor = Accent, unfocusedLabelColor = TextHint
+                                    )
+                                )
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            container.appPrefs.proxyHost = proxyHost
+                            container.appPrefs.proxyPort = proxyPort.toIntOrNull() ?: 1080
+                            container.appPrefs.proxyUser = proxyUser
+                            container.appPrefs.proxyPass = proxyPass
+                            showProxyDialog = false
+                        }) { Text("Сохранить", color = Accent) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showProxyDialog = false }) { Text("Отмена", color = TextMuted) }
+                    }
+                )
+            }
+
+            ExpandableCard("Прокси", Icons.Outlined.VpnLock, BgTertiary, TextSecondary) {
+                SettingsSwitch("SOCKS5 прокси", proxyEnabled) {
+                    proxyEnabled = it; container.appPrefs.proxyEnabled = it
+                }
+                SettingsRow("Настройки прокси",
+                    subtitle = if (proxyHost.isNotEmpty()) "${proxyHost}:${proxyPort}" else "Не настроен",
+                    icon = Icons.Outlined.Settings, iconBgColor = BgTertiary, iconColor = TextSecondary,
+                    onClick = { showProxyDialog = true }, showDivider = false)
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            // Множественные аккаунты
+            val accounts = remember { container.appPrefs.getAccounts() }
+            if (accounts.isNotEmpty()) {
+                ExpandableCard("Аккаунты", Icons.Outlined.ManageAccounts, BgTertiary, TextSecondary) {
+                    accounts.forEach { acc ->
+                        SettingsRow(
+                            title = acc.phone.ifEmpty { "Аккаунт ${acc.userId}" },
+                            subtitle = "userId: ${acc.userId}",
+                            icon = Icons.Outlined.AccountCircle, iconBgColor = BgTertiary, iconColor = TextSecondary,
+                            onClick = {
+                                container.authPrefs.setToken(acc.token)
+                                container.authPrefs.setUserId(acc.userId)
+                            },
+                            showDivider = accounts.last() != acc
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
 
             // Настройки устройства
             ExpandableCard("Устройство", Icons.Outlined.PhoneAndroid, BlueDark, Blue) {

@@ -244,6 +244,7 @@ class SessionManager(
 
     suspend fun loadSessions(): List<Map<String, Any?>> {
         val pkt = socket.sendAndAwait(MaxProtocol.Op.SESSIONS_LIST, mapOf("limit" to 50))
+            ?: return emptyList()
         if (pkt.cmd == MaxProtocol.CMD_OK) {
             @Suppress("UNCHECKED_CAST")
             return (pkt.payload["sessions"] as? List<Map<String, Any?>>) ?: emptyList()

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -138,7 +139,39 @@ class ChatViewModel(private val container: AppContainer, val chatId: Long) : Vie
     }
 
     fun sendTypingDebounced(isTyping: Boolean) = viewModelScope.launch {
-        container.msgRepo.sendTyping(chatId, isTyping)
+        if (!container.appPrefs.hideTypingStatus) container.msgRepo.sendTyping(chatId, isTyping)
+    }
+
+    fun markUnread() = viewModelScope.launch {
+        container.msgRepo.markUnread(chatId)
+    }
+
+    fun forwardMessage(messageId: Long, toChatId: Long) = viewModelScope.launch {
+        val ok = container.msgRepo.forwardMessage(chatId, messageId, toChatId)
+        if (!ok) _toast.trySend("Не удалось переслать")
+    }
+
+    fun searchMessages(query: String) = viewModelScope.launch {
+        _loading.value = true
+        val results = container.msgRepo.searchMessages(chatId, query)
+        _messages.value = results.reversed()
+        _loading.value = false
+    }
+
+    fun setAutoDelete(seconds: Int) = viewModelScope.launch {
+        container.msgRepo.setAutoDelete(chatId, seconds)
+    }
+
+    fun sendTypingIfAllowed(isTyping: Boolean) = viewModelScope.launch {
+        if (!container.appPrefs.hideTypingStatus) {
+            container.msgRepo.sendTyping(chatId, isTyping)
+        }
+    }
+
+    fun markReadIfAllowed(messageId: Long) = viewModelScope.launch {
+        if (container.appPrefs.autoMarkRead) {
+            container.msgRepo.markRead(chatId, messageId)
+        }
     }
 
     fun saveToFavorites(msg: Message, chatTitle: String) {
@@ -187,7 +220,12 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
     var inputText by remember { mutableStateOf("") }
     var replyTo by remember { mutableStateOf<Message?>(null) }
     var editingMsg by remember { mutableStateOf<Message?>(null) }
-    var selectedMsg by remember { mutableStateOf<Message?>(null) }
+    var selectedMsg     by remember { mutableStateOf<Message?>(null) }
+    var showForwardDialog by remember { mutableStateOf(false) }
+    var showAutoDelete    by remember { mutableStateOf(false) }
+    var showSearch        by remember { mutableStateOf(false) }
+    var searchQuery       by remember { mutableStateOf("") }
+    val clipboardManager  = androidx.compose.ui.platform.LocalClipboardManager.current
     val listState = rememberLazyListState()
     val snackbarHost = remember { SnackbarHostState() }
 
@@ -220,6 +258,39 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
         uri?.let { vm.uploadAndSend(it) }
     }
     var showAttachMenu by remember { mutableStateOf(false) }
+
+    // Диалог автоудаления
+    if (showAutoDelete) {
+        AlertDialog(
+            onDismissRequest = { showAutoDelete = false },
+            containerColor   = BgCard,
+            title = { Text("Автоудаление сообщений", style = MaterialTheme.typography.titleSmall) },
+            text = {
+                Column {
+                    listOf(0 to "Выключено", 3600 to "1 час", 86400 to "1 день",
+                        604800 to "1 неделя", 2592000 to "1 месяц").forEach { (sec, label) ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                vm.setAutoDelete(sec); showAutoDelete = false
+                            }.padding(vertical = 10.dp, horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(label, style = MaterialTheme.typography.bodyMedium, color = TextPrimary,
+                                modifier = Modifier.weight(1f))
+                        }
+                    }
+                }
+            },
+            confirmButton = {}
+        )
+    }
+
+    // Поиск по сообщениям (полоса над клавиатурой)
+    if (showSearch) {
+        LaunchedEffect(searchQuery) {
+            if (searchQuery.length >= 2) vm.searchMessages(searchQuery)
+        }
+    }
 
     Scaffold(
         containerColor = BgPrimary,
@@ -416,7 +487,14 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                     }
                 }
                 ActionMenuItem(Icons.Default.ContentCopy, "Копировать") {
+                    selectedMsg?.let { clipboardManager.setText(androidx.compose.ui.text.AnnotatedString(it.text)) }
                     selectedMsg = null
+                }
+                ActionMenuItem(Icons.Default.Forward, "Переслать") {
+                    showForwardDialog = true
+                }
+                ActionMenuItem(Icons.Default.MarkEmailUnread, "Оставить непрочитанным") {
+                    vm.markUnread(); selectedMsg = null
                 }
                 ActionMenuItem(Icons.Default.Bookmark, "Сохранить в избранное") {
                     selectedMsg?.let { vm.saveToFavorites(it, title) }
