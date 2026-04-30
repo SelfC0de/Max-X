@@ -248,7 +248,18 @@ private fun FolderTabs(
                     val match = folders.find { f ->
                         f.icon == tab.id || f.title.lowercase() == tab.label.lowercase()
                     }
-                    onSelect(if (isSelected) null else (match ?: ChatFolder(tab.id.hashCode().toLong(), tab.label, tab.id, 0)))
+                    onSelect(if (isSelected) null else (match ?: ChatFolder(
+                            id = tab.id,
+                            title = tab.label,
+                            icon = tab.id,
+                            filters = when (tab.id) {
+                                "personal"  -> ru.maxx.app.data.model.FolderFilter(includeGroups = false, includeChannels = false)
+                                "groups"    -> ru.maxx.app.data.model.FolderFilter(includePersonal = false, includeChannels = false)
+                                "channels"  -> ru.maxx.app.data.model.FolderFilter(includePersonal = false, includeGroups = false)
+                                "unread"    -> ru.maxx.app.data.model.FolderFilter(includeUnread = true)
+                                else        -> ru.maxx.app.data.model.FolderFilter()
+                            }
+                        )))
                 }
             }
         }
