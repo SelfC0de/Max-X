@@ -150,4 +150,12 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
         @Suppress("UNCHECKED_CAST")
         return (pkt.payload["channels"] as? List<Map<String, Any?>>) ?: emptyList()
     }
+
+    suspend fun loadMediaList(chatId: Long, type: String): List<Map<String, Any?>> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.MEDIA_LIST,
+            mapOf("chatId" to chatId, "type" to type, "count" to 50)
+        ) ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        return (pkt.payload["media"] as? List<Map<String, Any?>>) ?: emptyList()
+    }
 }

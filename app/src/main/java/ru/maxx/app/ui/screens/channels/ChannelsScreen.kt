@@ -41,7 +41,6 @@ class ChannelsViewModel(container: AppContainer) : ViewModel() {
 }
 
 @Composable
-@Composable
 fun ChannelsScreen(container: AppContainer, onBack: () -> Unit, onChannelClick: (Long, String) -> Unit) {
     val vm = remember { ChannelsViewModel(container) }
     val channels by vm.channels.collectAsState()

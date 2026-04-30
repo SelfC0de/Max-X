@@ -69,8 +69,26 @@ fun OtpScreen(container: AppContainer, token: String, phone: String = "", onAuth
         }
     }
 
+    var visible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { visible = true }
+
+    Box(Modifier.fillMaxSize().background(BgPrimary)) {
+        Box(
+            Modifier.size(280.dp).offset(x = (-40).dp, y = (-60).dp)
+                .blur(90.dp)
+                .background(
+                    androidx.compose.ui.graphics.Brush.radialGradient(
+                        listOf(AccentDark.copy(alpha = 0.5f), androidx.compose.ui.graphics.Color.Transparent)
+                    )
+                )
+        )
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(500)) + slideInVertically(tween(500)) { it / 6 },
+        modifier = Modifier.fillMaxSize()
+    ) {
     Column(
-        modifier = Modifier.fillMaxSize().background(BgPrimary).statusBarsPadding().padding(horizontal = 28.dp),
+        modifier = Modifier.fillMaxSize().statusBarsPadding().navigationBarsPadding().padding(horizontal = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

@@ -33,8 +33,14 @@ import ru.maxx.app.ui.theme.*
 
 @Composable
 fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: () -> Unit = {}) {
-    var biometric by remember { mutableStateOf(container.appPrefs.biometricEnabled) }
-    var passLock  by remember { mutableStateOf(container.appPrefs.passLockEnabled) }
+    var biometric  by remember { mutableStateOf(container.appPrefs.biometricEnabled) }
+    var passLock   by remember { mutableStateOf(container.appPrefs.passLockEnabled) }
+    var phoneVis   by remember { mutableStateOf(container.appPrefs.phoneVisibility) }
+    var onlineVis  by remember { mutableStateOf(container.appPrefs.onlineVisibility) }
+    var proxyEn    by remember { mutableStateOf(container.appPrefs.proxyEnabled) }
+    var proxyHost  by remember { mutableStateOf(container.appPrefs.proxyHost) }
+    var proxyPort  by remember { mutableStateOf(container.appPrefs.proxyPort.toString()) }
+    var notifV     by remember { mutableStateOf(container.appPrefs.notifVibro) }
 
 
     Scaffold(containerColor = BgPrimary, topBar = { MaxXTopBar("Настройки", onBack = onBack) }) { pad ->
@@ -48,7 +54,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                 VisibilityDialog(
                     title   = "Кто видит номер телефона",
                     current = phoneVis,
-                    onSelect = { container.appPrefs.phoneVisibility = it; showPhonePicker = false },
+                    onSelect = { container.appPrefs.phoneVisibility = it; phoneVis = it; showPhonePicker = false },
                     onDismiss = { showPhonePicker = false }
                 )
             }
@@ -56,7 +62,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                 VisibilityDialog(
                     title   = "Кто видит статус «в сети»",
                     current = onlineVis,
-                    onSelect = { container.appPrefs.onlineVisibility = it; showOnlinePicker = false },
+                    onSelect = { container.appPrefs.onlineVisibility = it; onlineVis = it; showOnlinePicker = false },
                     onDismiss = { showOnlinePicker = false }
                 )
             }
@@ -128,10 +134,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
 
 
             // Прокси
-            var proxyEnabled by remember { mutableStateOf(container.appPrefs.proxyEnabled) }
             var showProxyDialog by remember { mutableStateOf(false) }
-            var proxyHost by remember { mutableStateOf(container.appPrefs.proxyHost) }
-            var proxyPort by remember { mutableStateOf(container.appPrefs.proxyPort.toString()) }
             var proxyUser by remember { mutableStateOf(container.appPrefs.proxyUser) }
             var proxyPass by remember { mutableStateOf(container.appPrefs.proxyPass) }
 

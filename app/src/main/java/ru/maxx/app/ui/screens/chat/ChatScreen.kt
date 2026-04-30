@@ -495,7 +495,7 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(pad).padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             if (loading) {
                 item {
@@ -505,11 +505,16 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                 }
             }
             items(messages, key = { it.id }) { msg ->
-                MessageBubble(
-                    msg = msg, isMine = msg.senderId == vm.myUserId,
-                    onLongPress = { selectedMsg = msg },
-                    onReplyClick = { replyTo = it }
-                )
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = true,
+                    enter   = fadeIn(tween(160)) + slideInVertically(tween(160)) { 20 }
+                ) {
+                    MessageBubble(
+                        msg = msg, isMine = msg.senderId == vm.myUserId,
+                        onLongPress = { selectedMsg = msg },
+                        onReplyClick = { replyTo = it }
+                    )
+                }
             }
             item { Spacer(Modifier.height(4.dp)) }
         }
@@ -611,13 +616,22 @@ private fun MessageBubble(
     ) {
         Box(
             modifier = Modifier
-                .widthIn(min = 60.dp, max = 290.dp)
+                .widthIn(min = 64.dp, max = 300.dp)
                 .clip(RoundedCornerShape(
-                    topStart = 16.dp, topEnd = 16.dp,
-                    bottomStart = if (isMine) 16.dp else 4.dp,
-                    bottomEnd = if (isMine) 4.dp else 16.dp
+                    topStart    = 18.dp, topEnd   = 18.dp,
+                    bottomStart = if (isMine) 18.dp else 6.dp,
+                    bottomEnd   = if (isMine) 6.dp  else 18.dp
                 ))
-                .background(if (isMine) BubbleOut else BubbleIn)
+                .background(
+                    if (isMine)
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(BubbleOut, Color(0xFF223815))
+                        )
+                    else
+                        androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(BubbleIn, BgCard)
+                        )
+                )
                 .pointerInput(Unit) { detectTapGestures(onLongPress = { onLongPress() }) }
                 .padding(horizontal = 11.dp, vertical = 8.dp)
         ) {

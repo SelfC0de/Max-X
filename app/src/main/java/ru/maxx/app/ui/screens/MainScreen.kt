@@ -1,6 +1,8 @@
 package ru.maxx.app.ui.screens
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -67,8 +69,21 @@ fun MainScreen(
             )
         }
     ) { pad ->
-        Box(Modifier.fillMaxSize().padding(pad)) {
-            when (selectedTab) {
+        AnimatedContent(
+            targetState    = selectedTab,
+            modifier       = Modifier.fillMaxSize().padding(pad),
+            transitionSpec = {
+                if (targetState > initialState) {
+                    slideInHorizontally(tween(220)) { it / 5 } + fadeIn(tween(180)) togetherWith
+                    slideOutHorizontally(tween(220)) { -it / 5 } + fadeOut(tween(180))
+                } else {
+                    slideInHorizontally(tween(220)) { -it / 5 } + fadeIn(tween(180)) togetherWith
+                    slideOutHorizontally(tween(220)) { it / 5 } + fadeOut(tween(180))
+                }
+            },
+            label = "tab_content"
+        ) { tab ->
+            when (tab) {
                 0 -> ChatsScreen(
                     container        = container,
                     onChatClick      = onChatClick,
@@ -94,6 +109,7 @@ fun MainScreen(
                     onFavoritesClick = { showFavorites = true },
                     onLogout         = onLogout
                 )
+                else -> {}
             }
         }
     }

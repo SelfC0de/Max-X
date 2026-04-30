@@ -4,6 +4,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -47,7 +49,7 @@ fun MaxXTopBar(
             Row(verticalAlignment = Alignment.CenterVertically, content = actions)
             Spacer(Modifier.width(4.dp))
         }
-        HorizontalDivider(color = Border, thickness = 0.5.dp)
+        HorizontalDivider(color = Border.copy(alpha = 0.5f), thickness = 0.5.dp)
     }
 }
 
@@ -93,19 +95,25 @@ fun MaxXButton(
     text: String, onClick: () -> Unit,
     modifier: Modifier = Modifier, enabled: Boolean = true, loading: Boolean = false
 ) {
+    val elevation by animateDpAsState(if (enabled && !loading) 4.dp else 0.dp, label = "btn_elev")
     Button(
         onClick = onClick, enabled = enabled && !loading,
-        modifier = modifier.fillMaxWidth().height(50.dp),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.fillMaxWidth().height(52.dp),
+        shape = RoundedCornerShape(14.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = elevation),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Accent, contentColor = BgSecondary,
-            disabledContainerColor = BgCard, disabledContentColor = TextMuted
+            containerColor         = Accent,  contentColor         = BgPrimary,
+            disabledContainerColor = BgCard,  disabledContentColor = TextMuted
         )
     ) {
-        if (loading) {
-            CircularProgressIndicator(modifier = Modifier.size(18.dp), color = BgSecondary, strokeWidth = 2.dp)
-        } else {
-            Text(text, fontWeight = FontWeight.Medium, fontSize = 15.sp)
+        AnimatedContent(loading, label = "btn_content",
+            transitionSpec = { fadeIn(tween(180)) togetherWith fadeOut(tween(120)) }
+        ) { isLoading ->
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.size(20.dp), color = BgPrimary, strokeWidth = 2.dp)
+            } else {
+                Text(text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, letterSpacing = 0.3.sp)
+            }
         }
     }
 }
