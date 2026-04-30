@@ -23,6 +23,7 @@ class AppContainer(val ctx: Context) {
     val e2eCrypto    by lazy { E2ECrypto(ctx) }
     val e2eRepo      by lazy { E2ERepository(socket, e2eCrypto, ctx) }
     val foldersRepo  by lazy { FoldersRepository(socket, ctx) }
-    val favoritesRepo by lazy { FavoritesRepository(ctx) }
+    val favoritesRepo  by lazy { FavoritesRepository(ctx) }
+    val voiceRecorder  by lazy { ru.maxx.app.core.voice.VoiceRecorder(ctx) }
     val exportService by lazy { ExportService(ctx) }
 }

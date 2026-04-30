@@ -158,6 +158,27 @@ class ChatViewModel(private val container: AppContainer, val chatId: Long) : Vie
         _loading.value = false
     }
 
+    private var voiceFile: java.io.File? = null
+
+    fun startVoiceRecording(): Boolean {
+        voiceFile = container.voiceRecorder.start()
+        return voiceFile != null
+    }
+
+    fun stopAndSendVoice() = viewModelScope.launch {
+        val file = container.voiceRecorder.stop() ?: return@launch
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            container.ctx, "${container.ctx.packageName}.provider", file
+        )
+        uploadAndSend(uri)
+        file.deleteOnExit()
+    }
+
+    fun cancelVoiceRecording() {
+        container.voiceRecorder.cancel()
+        voiceFile = null
+    }
+
     fun setAutoDelete(seconds: Int) = viewModelScope.launch {
         container.msgRepo.setAutoDelete(chatId, seconds)
     }
@@ -223,6 +244,7 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
     var selectedMsg     by remember { mutableStateOf<Message?>(null) }
     var showForwardDialog by remember { mutableStateOf(false) }
     var showAutoDelete    by remember { mutableStateOf(false) }
+    var showMediaGallery  by remember { mutableStateOf(false) }
     var showSearch        by remember { mutableStateOf(false) }
     var searchQuery       by remember { mutableStateOf("") }
     val clipboardManager  = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -257,7 +279,21 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { vm.uploadAndSend(it) }
     }
-    var showAttachMenu by remember { mutableStateOf(false) }
+    var showAttachMenu    by remember { mutableStateOf(false) }
+    var isRecordingVoice  by remember { mutableStateOf(false) }
+    val voicePermission = rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted -> if (granted) { isRecordingVoice = true; vm.startVoiceRecording() } }
+
+    if (showMediaGallery) {
+        ru.maxx.app.ui.screens.media.MediaGalleryScreen(
+            container  = container,
+            chatId     = chatId,
+            chatTitle  = title,
+            onBack     = { showMediaGallery = false }
+        )
+        return
+    }
 
     // Диалог автоудаления
     if (showAutoDelete) {
@@ -285,11 +321,8 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
         )
     }
 
-    // Поиск по сообщениям (полоса над клавиатурой)
-    if (showSearch) {
-        LaunchedEffect(searchQuery) {
-            if (searchQuery.length >= 2) vm.searchMessages(searchQuery)
-        }
+    LaunchedEffect(searchQuery) {
+        if (showSearch && searchQuery.length >= 2) vm.searchMessages(searchQuery)
     }
 
     Scaffold(
@@ -347,6 +380,36 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                         }
                     }
                 }
+                // Search bar
+                AnimatedVisibility(
+                    visible = showSearch,
+                    enter = slideInVertically { -it } + fadeIn(),
+                    exit  = slideOutVertically { -it } + fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().background(BgCard)
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text("Поиск в чате...", color = TextHint, fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f).height(40.dp),
+                            shape = RoundedCornerShape(10.dp), singleLine = true,
+                            textStyle = LocalTextStyle.current.copy(fontSize = 12.sp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = BgSecondary, unfocusedContainerColor = BgSecondary,
+                                focusedBorderColor = Accent, unfocusedBorderColor = Border,
+                                focusedTextColor = TextPrimary, unfocusedTextColor = TextPrimary, cursorColor = Accent
+                            )
+                        )
+                        IconButton(onClick = { showSearch = false; searchQuery = "" }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.Close, null, tint = TextMuted, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
                 HorizontalDivider(color = Border, thickness = 0.5.dp)
                 // Input bar
                 Row(
@@ -376,12 +439,18 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                         )
                     )
                     val canSend = inputText.trim().isNotEmpty()
-                    AnimatedContent(targetState = canSend, transitionSpec = {
-                        scaleIn(tween(150)) togetherWith scaleOut(tween(150))
-                    }, label = "send_btn") { active ->
-                        IconButton(
-                            onClick = {
-                                if (active) {
+                    AnimatedContent(
+                        targetState = when {
+                            isRecordingVoice -> "voice"
+                            canSend          -> "send"
+                            else             -> "mic"
+                        },
+                        transitionSpec = { scaleIn(tween(150)) togetherWith scaleOut(tween(150)) },
+                        label = "send_btn"
+                    ) { state ->
+                        when (state) {
+                            "send" -> IconButton(
+                                onClick = {
                                     if (editingMsg != null) {
                                         vm.editMessage(editingMsg!!.id, inputText.trim())
                                         editingMsg = null
@@ -390,16 +459,33 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                                         replyTo = null
                                     }
                                     inputText = ""
-                                }
-                            },
-                            modifier = Modifier.size(40.dp).clip(CircleShape)
-                                .background(if (active) Accent else BgCard)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Send, null,
-                                tint = if (active) BgSecondary else TextMuted,
-                                modifier = Modifier.size(18.dp)
-                            )
+                                },
+                                modifier = Modifier.size(40.dp).clip(CircleShape).background(Accent)
+                            ) { Icon(Icons.AutoMirrored.Filled.Send, null, tint = BgSecondary, modifier = Modifier.size(18.dp)) }
+
+                            "mic" -> IconButton(
+                                onClick = {
+                                    voicePermission.launch(android.Manifest.permission.RECORD_AUDIO)
+                                },
+                                modifier = Modifier.size(40.dp).clip(CircleShape).background(BgCard)
+                            ) { Icon(Icons.Outlined.Mic, null, tint = TextMuted, modifier = Modifier.size(20.dp)) }
+
+                            "voice" -> Row(
+                                modifier = Modifier.height(40.dp).clip(RoundedCornerShape(20.dp))
+                                    .background(Red).padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { isRecordingVoice = false; vm.cancelVoiceRecording() },
+                                    modifier = Modifier.size(32.dp)
+                                ) { Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                                IconButton(
+                                    onClick = { isRecordingVoice = false; vm.stopAndSendVoice() },
+                                    modifier = Modifier.size(32.dp)
+                                ) { Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
+                            }
+                            else -> Box(Modifier.size(40.dp))
                         }
                     }
                 }
