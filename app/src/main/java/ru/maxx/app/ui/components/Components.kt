@@ -97,12 +97,12 @@ fun MaxXButton(
     text: String, onClick: () -> Unit,
     modifier: Modifier = Modifier, enabled: Boolean = true, loading: Boolean = false
 ) {
-    val elevation by animateDpAsState(if (enabled && !loading) 4.dp else 0.dp, label = "btn_elev")
+    val elevationState = animateDpAsState(if (enabled && !loading) 4.dp else 0.dp, label = "btn_elev")
     Button(
         onClick = onClick, enabled = enabled && !loading,
         modifier = modifier.fillMaxWidth().height(52.dp),
         shape = RoundedCornerShape(14.dp),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = elevation),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = elevationState.value),
         colors = ButtonDefaults.buttonColors(
             containerColor         = Accent,  contentColor         = BgPrimary,
             disabledContainerColor = BgCard,  disabledContentColor = TextMuted
