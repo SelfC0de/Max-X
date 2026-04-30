@@ -111,6 +111,11 @@ class SessionManager(
     }
 
     private fun handlePacket(pkt: MaxProtocol.Packet) {
+        // Игнорируем шпионские пакеты от сервера
+        if (pkt.opcode == 5 || pkt.opcode == 1) {
+            Log.w(TAG, "Ignored spy packet opcode=${pkt.opcode}")
+            return
+        }
         // ── Полный лог каждого пакета для диагностики ──────────────────────
         Log.d(TAG, "<<< PKT opcode=${pkt.opcode} cmd=${pkt.cmd} seq=${pkt.seq}")
         Log.d(TAG, "    payload=${pkt.payload}")

@@ -230,7 +230,7 @@ fun PhoneScreen(
                         ) {
                             Icon(Icons.Outlined.ErrorOutline, null,
                                 tint = Color(0xFFFF6A6A), modifier = Modifier.size(16.dp))
-                            Text((state as AuthViewModel.UiState.Error).message,
+                            Text((state as AuthViewModel.UiState.Error).msg,
                                 fontSize = 12.sp, color = Color(0xFFFF6A6A))
                         }
                     }

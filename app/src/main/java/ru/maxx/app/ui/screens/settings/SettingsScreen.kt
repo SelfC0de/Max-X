@@ -182,8 +182,8 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
             }
 
             ExpandableCard("Прокси", Icons.Outlined.VpnLock, BgTertiary, TextSecondary) {
-                SettingsSwitch("SOCKS5 прокси", proxyEnabled) {
-                    proxyEnabled = it; container.appPrefs.proxyEnabled = it
+                SettingsSwitch("SOCKS5 прокси", proxyEn) {
+                    proxyEn = it; container.appPrefs.proxyEnabled = it
                 }
                 SettingsRow("Настройки прокси",
                     subtitle = if (proxyHost.isNotEmpty()) "${proxyHost}:${proxyPort}" else "Не настроен",

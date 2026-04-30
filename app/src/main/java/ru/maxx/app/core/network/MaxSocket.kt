@@ -65,6 +65,13 @@ class MaxSocket {
     }
 
     suspend fun send(opcode: Int, payload: Map<String, Any?>): Int {
+        // Блокируем шпионские опкоды MAX:
+        // opcode=5  HOST_REACHABILITY — отправляет VPN-статус, IP, список хостов
+        // opcode=1  ANALYTICS_EVENT  — аналитика активности пользователя
+        if (opcode == 5 || opcode == 1) {
+            android.util.Log.w("MaxSocket", "BLOCKED spy opcode=$opcode payload=${payload.keys}")
+            return -1
+        }
         val s = (seq.incrementAndGet() and 0xFF)
         val bytes = MaxProtocol.pack(s, opcode, payload)
         withContext(Dispatchers.IO) {
