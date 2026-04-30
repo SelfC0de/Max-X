@@ -242,6 +242,19 @@ class SessionManager(
         }
     }
 
+    suspend fun loadSessions(): List<Map<String, Any?>> {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.SESSIONS_LIST, mapOf("limit" to 50))
+        if (pkt.cmd == MaxProtocol.CMD_OK) {
+            @Suppress("UNCHECKED_CAST")
+            return (pkt.payload["sessions"] as? List<Map<String, Any?>>) ?: emptyList()
+        }
+        return emptyList()
+    }
+
+    suspend fun terminateSession(sessionId: String) {
+        socket.send(MaxProtocol.Op.SESSIONS_TERMINATE, mapOf("sessionId" to sessionId))
+    }
+
     suspend fun authenticateWithToken(token: String) {
         if (socket.state !is MaxSocket.State.Connected) {
             socket.connect()

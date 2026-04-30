@@ -103,6 +103,9 @@ fun ProfileScreen(
     var showEditDialog    by remember { mutableStateOf(false) }
     var showStatusDialog  by remember { mutableStateOf(false) }
     var showSessionsDialog by remember { mutableStateOf(false) }
+    var sessions by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }
+    var sessionsLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     var editName by remember { mutableStateOf(userName) }
     var statusText by remember { mutableStateOf("") }
 
@@ -177,9 +180,37 @@ fun ProfileScreen(
             title = { Text("Активные сессии", style = MaterialTheme.typography.titleSmall) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SessionItem("Текущее устройство", "Android · прямо сейчас", isCurrent = true)
-                    SessionItem("Honor Magic6 Pro", "Android 14 · сегодня", isCurrent = false,
-                        onTerminate = { showSessionsDialog = false })
+                    if (sessionsLoading) {
+                        Box(Modifier.fillMaxWidth().padding(16.dp), Alignment.Center) {
+                            CircularProgressIndicator(color = Accent, modifier = Modifier.size(24.dp))
+                        }
+                    } else if (sessions.isEmpty()) {
+                        Text("Нет данных о сессиях", style = MaterialTheme.typography.bodySmall, color = TextMuted)
+                    } else {
+                        val currentId = container.authPrefs.getUserId()?.toString()
+                        sessions.forEach { s ->
+                            val sid     = s["sessionId"]?.toString() ?: s["id"]?.toString() ?: ""
+                            val device  = s["deviceName"]?.toString() ?: s["device"]?.toString() ?: "Устройство"
+                            val os      = s["osVersion"]?.toString() ?: s["os"]?.toString() ?: ""
+                            val app     = s["appVersion"]?.toString() ?: ""
+                            val lastSeen = s["lastActivity"]?.toString() ?: s["lastSeen"]?.toString() ?: ""
+                            val isCurr  = s["current"] as? Boolean
+                                ?: (s["isCurrent"] as? Boolean)
+                                ?: false
+                            val subtitle = listOfNotNull(os.ifEmpty { null }, app.ifEmpty { null }, lastSeen.ifEmpty { null }).joinToString(" · ")
+                            SessionItem(
+                                name       = device,
+                                subtitle   = subtitle.ifEmpty { "Активна" },
+                                isCurrent  = isCurr,
+                                onTerminate = if (!isCurr) ({
+                                    scope.launch {
+                                        container.session.terminateSession(sid)
+                                        sessions = container.session.loadSessions()
+                                    }
+                                }) else null
+                            )
+                        }
+                    }
                 }
             },
             confirmButton = {
@@ -244,7 +275,14 @@ fun ProfileScreen(
                 SettingsRow("Избранное", icon = Icons.Filled.Bookmark, iconBgColor = AccentDark, iconColor = Accent, onClick = onFavoritesClick)
                 SettingsRow("Мои каналы", icon = Icons.Outlined.Campaign, iconBgColor = PurpleDark, iconColor = Purple, onClick = {})
                 SettingsRow("Активные сессии", icon = Icons.Outlined.Devices, iconBgColor = BlueDark, iconColor = Blue,
-                    subtitle = "Управление сессиями", onClick = { showSessionsDialog = true }, showDivider = false)
+                    subtitle = "Управление сессиями", onClick = {
+                        showSessionsDialog = true
+                        sessionsLoading = true
+                        scope.launch {
+                            sessions = container.session.loadSessions()
+                            sessionsLoading = false
+                        }
+                    }, showDivider = false)
             }
 
             Spacer(Modifier.height(8.dp))
