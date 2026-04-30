@@ -38,6 +38,51 @@ class AppPrefs(private val ctx: Context) {
         set(v) = sp.edit { putString("proxy_pass", v) }
 
     // Множественные аккаунты
+
+    // Безопасность
+    var biometricEnabled: Boolean
+        get() = sp.getBoolean("biometric_enabled", false)
+        set(v) = sp.edit { putBoolean("biometric_enabled", v) }
+
+    var passLockEnabled: Boolean
+        get() = sp.getBoolean("pass_lock_enabled", false)
+        set(v) = sp.edit { putBoolean("pass_lock_enabled", v) }
+
+    // Уведомления
+    var notifPersonal: Boolean
+        get() = sp.getBoolean("notif_personal", true)
+        set(v) = sp.edit { putBoolean("notif_personal", v) }
+
+    var notifGroups: Boolean
+        get() = sp.getBoolean("notif_groups", true)
+        set(v) = sp.edit { putBoolean("notif_groups", v) }
+
+    var notifChannels: Boolean
+        get() = sp.getBoolean("notif_channels", false)
+        set(v) = sp.edit { putBoolean("notif_channels", v) }
+
+    var notifSound: Boolean
+        get() = sp.getBoolean("notif_sound", true)
+        set(v) = sp.edit { putBoolean("notif_sound", v) }
+
+    var notifVibro: Boolean
+        get() = sp.getBoolean("notif_vibro", true)
+        set(v) = sp.edit { putBoolean("notif_vibro", v) }
+
+    // Спуфинг
+    var spoofEnabled: Boolean
+        get() = sp.getBoolean("spoof_enabled", true)
+        set(v) = sp.edit { putBoolean("spoof_enabled", v) }
+
+    // Приватность
+    var phoneVisibility: String
+        get() = sp.getString("phone_vis", "everyone") ?: "everyone"
+        set(v) = sp.edit { putString("phone_vis", v) }
+
+    var onlineVisibility: String
+        get() = sp.getString("online_vis", "everyone") ?: "everyone"
+        set(v) = sp.edit { putString("online_vis", v) }
+
     fun getAccounts(): List<SavedAccount> {
         val raw = sp.getString("accounts", "") ?: ""
         if (raw.isEmpty()) return emptyList()

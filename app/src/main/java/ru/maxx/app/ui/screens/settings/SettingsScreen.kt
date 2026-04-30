@@ -23,8 +23,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.maxx.app.data.prefs.AppPrefs
@@ -33,53 +31,11 @@ import ru.maxx.app.ui.components.*
 import androidx.compose.material.icons.outlined.Check
 import ru.maxx.app.ui.theme.*
 
-class SettingsViewModel(private val prefs: AppPrefs) : ViewModel() {
-    val biometric   = prefs.biometricEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val passLock    = prefs.passLockEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val proxyEn     = prefs.proxyEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val proxyHost   = prefs.proxyHost.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
-    val proxyPort   = prefs.proxyPort.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 1080)
-    val notifPersonal = prefs.notifPersonal.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    val notifGroups   = prefs.notifGroups.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    val notifChannels = prefs.notifChannels.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
-    val notifSound    = prefs.notifSound.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    val notifVibro    = prefs.notifVibro.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    val spoof         = prefs.spoofEnabled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), true)
-    val phoneVis      = prefs.phoneVisibility.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "nobody")
-    val onlineVis     = prefs.onlineVisibility.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "everyone")
-
-    fun setBiometric(v: Boolean)     = viewModelScope.launch { prefs.setBiometric(v) }
-    fun setPassLock(v: Boolean)      = viewModelScope.launch { prefs.setPassLock(v) }
-    fun setProxyEnabled(v: Boolean)  = viewModelScope.launch { prefs.setProxyEnabled(v) }
-    fun setProxyHost(v: String)      = viewModelScope.launch { prefs.setProxyHost(v) }
-    fun setProxyPort(v: Int)         = viewModelScope.launch { prefs.setProxyPort(v) }
-    fun setNotifPersonal(v: Boolean) = viewModelScope.launch { prefs.setNotifPersonal(v) }
-    fun setNotifGroups(v: Boolean)   = viewModelScope.launch { prefs.setNotifGroups(v) }
-    fun setNotifChannels(v: Boolean) = viewModelScope.launch { prefs.setNotifChannels(v) }
-    fun setNotifSound(v: Boolean)    = viewModelScope.launch { prefs.setNotifSound(v) }
-    fun setNotifVibro(v: Boolean)    = viewModelScope.launch { prefs.setNotifVibro(v) }
-    fun setSpoof(v: Boolean)         = viewModelScope.launch { prefs.setSpoofEnabled(v) }
-    fun setPhoneVis(v: String)       = viewModelScope.launch { prefs.setPhoneVisibility(v) }
-    fun setOnlineVis(v: String)      = viewModelScope.launch { prefs.setOnlineVisibility(v) }
-}
-
 @Composable
 fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: () -> Unit = {}) {
-    val vm = remember { SettingsViewModel(container.appPrefs) }
+    var biometric by remember { mutableStateOf(container.appPrefs.biometricEnabled) }
+    var passLock  by remember { mutableStateOf(container.appPrefs.passLockEnabled) }
 
-    val biometric   by vm.biometric.collectAsState()
-    val passLock    by vm.passLock.collectAsState()
-    val proxyEn     by vm.proxyEn.collectAsState()
-    val proxyHost   by vm.proxyHost.collectAsState()
-    val proxyPort   by vm.proxyPort.collectAsState()
-    val notifP      by vm.notifPersonal.collectAsState()
-    val notifG      by vm.notifGroups.collectAsState()
-    val notifCh     by vm.notifChannels.collectAsState()
-    val notifS      by vm.notifSound.collectAsState()
-    val notifV      by vm.notifVibro.collectAsState()
-    val spoof       by vm.spoof.collectAsState()
-    val phoneVis    by vm.phoneVis.collectAsState()
-    val onlineVis   by vm.onlineVis.collectAsState()
 
     Scaffold(containerColor = BgPrimary, topBar = { MaxXTopBar("Настройки", onBack = onBack) }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).verticalScroll(rememberScrollState()).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -92,7 +48,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                 VisibilityDialog(
                     title   = "Кто видит номер телефона",
                     current = phoneVis,
-                    onSelect = { vm.setPhoneVis(it); showPhonePicker = false },
+                    onSelect = { container.appPrefs.phoneVisibility = it; showPhonePicker = false },
                     onDismiss = { showPhonePicker = false }
                 )
             }
@@ -100,7 +56,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                 VisibilityDialog(
                     title   = "Кто видит статус «в сети»",
                     current = onlineVis,
-                    onSelect = { vm.setOnlineVis(it); showOnlinePicker = false },
+                    onSelect = { container.appPrefs.onlineVisibility = it; showOnlinePicker = false },
                     onDismiss = { showOnlinePicker = false }
                 )
             }
@@ -126,8 +82,8 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
 
             // Безопасность
             ExpandableCard("Безопасность", Icons.Filled.Lock, PurpleDark, Purple) {
-                SettingsSwitchRow("Пароль входа", "Дополнительная защита", passLock) { vm.setPassLock(it) }
-                SettingsSwitchRow("Биометрия", "Отпечаток / Face ID", biometric) { vm.setBiometric(it) }
+                SettingsSwitchRow("Пароль входа", "Дополнительная защита", passLock) { container.appPrefs.passLockEnabled = it }
+                SettingsSwitchRow("Биометрия", "Отпечаток / Face ID", biometric) { container.appPrefs.biometricEnabled = it }
                 SettingsToggle("Активные сессии", "2 устройства") {}
             }
 
@@ -135,11 +91,11 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
 
             // Сеть и прокси
             ExpandableCard("Сеть и прокси", Icons.Outlined.Wifi, BlueDark, Blue) {
-                SettingsSwitchRow("SOCKS5 прокси", if (proxyEn) "$proxyHost:$proxyPort" else "Выключен", proxyEn) { vm.setProxyEnabled(it) }
+                SettingsSwitchRow("SOCKS5 прокси", if (proxyEn) "$proxyHost:$proxyPort" else "Выключен", proxyEn) { container.appPrefs.proxyEnabled = it }
                 if (proxyEn) {
                     var hostEdit by remember { mutableStateOf(proxyHost) }
                     OutlinedTextField(
-                        value = hostEdit, onValueChange = { hostEdit = it; vm.setProxyHost(it) },
+                        value = hostEdit, onValueChange = { hostEdit = it; container.appPrefs.proxyHost = it },
                         placeholder = { Text("127.0.0.1", color = TextHint, fontSize = 12.sp) },
                         label = { Text("Адрес прокси", fontSize = 11.sp) },
                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -152,7 +108,7 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
                         )
                     )
                 }
-                SettingsSwitchRow("Спуфинг сессии", "Маскировка под официальный клиент", spoof) { vm.setSpoof(it) }
+                SettingsSwitchRow("Спуфинг сессии", "Маскировка под официальный клиент", container.appPrefs.spoofEnabled) { container.appPrefs.spoofEnabled = it }
                 SettingsInfo("Все запросы только к api.oneme.ru · Телеметрия отсутствует")
             }
 
@@ -160,11 +116,11 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
 
             // Уведомления
             ExpandableCard("Уведомления", Icons.Outlined.Notifications, Color(0xFF2E1A0D), Orange) {
-                SettingsSwitchRow("Личные чаты", null, notifP) { vm.setNotifPersonal(it) }
-                SettingsSwitchRow("Группы", null, notifG) { vm.setNotifGroups(it) }
-                SettingsSwitchRow("Каналы", null, notifCh) { vm.setNotifChannels(it) }
-                SettingsSwitchRow("Звук", null, notifS) { vm.setNotifSound(it) }
-                SettingsSwitchRow("Вибрация", null, notifV, showDivider = false) { vm.setNotifVibro(it) }
+                SettingsSwitchRow("Личные чаты", null, container.appPrefs.notifPersonal) { container.appPrefs.notifPersonal = it }
+                SettingsSwitchRow("Группы", null, container.appPrefs.notifGroups) { container.appPrefs.notifGroups = it }
+                SettingsSwitchRow("Каналы", null, container.appPrefs.notifChannels) { container.appPrefs.notifChannels = it }
+                SettingsSwitchRow("Звук", null, container.appPrefs.notifSound) { container.appPrefs.notifSound = it }
+                SettingsSwitchRow("Вибрация", null, notifV, showDivider = false) { container.appPrefs.notifVibro = it }
             }
 
             Spacer(Modifier.height(8.dp))
