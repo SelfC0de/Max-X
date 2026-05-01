@@ -107,7 +107,7 @@ fun ChannelsScreen(container: AppContainer, onBack: () -> Unit, onChannelClick: 
         Column(Modifier.fillMaxSize().padding(pad)) {
 
             // Search bar
-            AnimatedVisibility(visible = showSearch, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            AnimatedVisibility(visible = showSearch, enter = fadeIn(androidx.compose.animation.core.tween(200)), exit = fadeOut(androidx.compose.animation.core.tween(200))) {
                 OutlinedTextField(
                     value = searchQuery, onValueChange = { searchQuery = it },
                     placeholder = { Text("Поиск каналов...", color = TextHint, fontSize = 13.sp) },

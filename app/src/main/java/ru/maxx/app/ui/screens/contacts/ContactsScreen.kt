@@ -123,7 +123,7 @@ fun ContactsScreen(container: AppContainer, onBack: () -> Unit, onContactClick: 
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
 
-            AnimatedVisibility(visible = showSearch, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
+            AnimatedVisibility(visible = showSearch, enter = fadeIn(androidx.compose.animation.core.tween(200)), exit = fadeOut(androidx.compose.animation.core.tween(200))) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
                     placeholder = { Text("Поиск контактов...", color = TextHint, fontSize = 13.sp) },
