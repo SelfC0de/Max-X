@@ -31,6 +31,7 @@ import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.components.*
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import ru.maxx.app.ui.theme.*
 
 class ProfileViewModel(private val container: AppContainer) : ViewModel() {
@@ -189,19 +190,55 @@ fun ProfileScreen(
                     } else {
                         val currentId = container.authPrefs.getUserId()?.toString()
                         sessions.forEach { s ->
-                            val sid     = s["sessionId"]?.toString() ?: s["id"]?.toString() ?: ""
-                            val device  = s["deviceName"]?.toString() ?: s["device"]?.toString() ?: "Устройство"
-                            val os      = s["osVersion"]?.toString() ?: s["os"]?.toString() ?: ""
-                            val app     = s["appVersion"]?.toString() ?: ""
-                            val lastSeen = s["lastActivity"]?.toString() ?: s["lastSeen"]?.toString() ?: ""
-                            val isCurr  = s["current"] as? Boolean
-                                ?: (s["isCurrent"] as? Boolean)
-                                ?: false
-                            val subtitle = listOfNotNull(os.ifEmpty { null }, app.ifEmpty { null }, lastSeen.ifEmpty { null }).joinToString(" · ")
-                            SessionItem(
-                                name       = device,
-                                subtitle   = subtitle.ifEmpty { "Активна" },
+                            val sid      = s["sessionId"]?.toString() ?: s["id"]?.toString() ?: ""
+                            // deviceType: MAX WEB / MAX Android / MAX iOS
+                            val devType  = s["deviceType"]?.toString() ?: s["clientType"]?.toString() ?: ""
+                            val devName  = s["deviceName"]?.toString() ?: s["device"]?.toString() ?: ""
+                            val browser  = s["browser"]?.toString() ?: s["client"]?.toString() ?: ""
+                            val os       = s["osVersion"]?.toString() ?: s["os"]?.toString() ?: ""
+                            val app      = s["appVersion"]?.toString() ?: ""
+                            val ip       = s["ip"]?.toString() ?: s["ipAddress"]?.toString() ?: ""
+                            val country  = s["country"]?.toString() ?: s["countryName"]?.toString() ?: ""
+                            val city     = s["city"]?.toString() ?: ""
+                            // Название: "MAX WEB" / "MAX Android" / "MAX iOS"
+                            val label = when {
+                                devType.contains("WEB", ignoreCase = true)     -> "MAX WEB"
+                                devType.contains("ANDROID", ignoreCase = true) -> "MAX Android"
+                                devType.contains("IOS", ignoreCase = true)     -> "MAX iOS"
+                                devType.isNotEmpty() -> "MAX ${devType.lowercase().replaceFirstChar { it.uppercaseChar() }}"
+                                devName.isNotEmpty() -> devName
+                                else -> "Устройство"
+                            }
+                            // Подзаголовок: "Chrome, Windows" / "iPhone 15 Pro Max, iOS 17"
+                            val line1 = listOfNotNull(
+                                browser.ifEmpty { null },
+                                devName.ifEmpty { null },
+                                os.ifEmpty { null }
+                            ).distinct().joinToString(", ")
+                            // Гео: "Finland, Uusimaa, IP 94.237.113.76"
+                            val line2 = listOfNotNull(
+                                country.ifEmpty { null },
+                                city.ifEmpty { null },
+                                if (ip.isNotEmpty()) "IP $ip" else null
+                            ).joinToString(", ")
+
+                            val lastSeen = s["lastActivity"]?.toString() ?: s["lastSeen"]?.toString() ?: s["seen"]?.toString() ?: ""
+                            val lastSeenFmt = if (lastSeen.isNotEmpty() && lastSeen.all { it.isDigit() }) {
+                                val ms = lastSeen.toLong() * if (lastSeen.length <= 10) 1000L else 1L
+                                val cal = java.util.Calendar.getInstance().also { it.timeInMillis = ms }
+                                String.format("%02d:%02d", cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE))
+                            } else lastSeen
+
+                            val isCurr = s["current"] as? Boolean ?: s["isCurrent"] as? Boolean ?: false
+                            val isOnline = s["online"] as? Boolean ?: s["status"] == 1 ?: false
+
+                            SessionItemFull(
+                                label      = label,
+                                line1      = line1,
+                                line2      = line2,
+                                lastSeen   = lastSeenFmt,
                                 isCurrent  = isCurr,
+                                isOnline   = isOnline,
                                 onTerminate = if (!isCurr) ({
                                     scope.launch {
                                         container.session.terminateSession(sid)
@@ -345,20 +382,41 @@ fun ProfileScreen(
 }
 
 @Composable
-private fun SessionItem(name: String, subtitle: String, isCurrent: Boolean, onTerminate: (() -> Unit)? = null) {
+private fun SessionItemFull(
+    label: String, line1: String, line2: String,
+    lastSeen: String, isCurrent: Boolean, isOnline: Boolean,
+    onTerminate: (() -> Unit)?
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().background(BgSecondary, androidx.compose.foundation.shape.RoundedCornerShape(8.dp)).padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+            .background(BgSecondary, androidx.compose.foundation.shape.RoundedCornerShape(10.dp))
+            .padding(12.dp),
+        verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.bodyMedium, color = TextPrimary)
-            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = TextMuted)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                color = TextPrimary)
+            if (line1.isNotEmpty())
+                Text(line1, style = MaterialTheme.typography.labelSmall, color = TextSecondary)
+            if (line2.isNotEmpty())
+                Text(line2, style = MaterialTheme.typography.labelSmall, color = TextMuted)
+            if (onTerminate != null) {
+                Spacer(Modifier.height(4.dp))
+                Text("Завершить сессию", fontSize = 12.sp, color = Red,
+                    modifier = Modifier.clickable { onTerminate() })
+            }
         }
-        if (isCurrent) {
-            Text("Текущая", fontSize = 10.sp, color = Accent)
-        } else if (onTerminate != null) {
-            TextButton(onClick = onTerminate) { Text("Завершить", fontSize = 11.sp, color = Red) }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (isCurrent || isOnline) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Box(Modifier.size(7.dp).background(Accent, androidx.compose.foundation.shape.CircleShape))
+                    Text("В сети", fontSize = 10.sp, color = Accent)
+                }
+            } else if (lastSeen.isNotEmpty()) {
+                Text(lastSeen, fontSize = 11.sp, color = TextMuted)
+            }
         }
     }
 }

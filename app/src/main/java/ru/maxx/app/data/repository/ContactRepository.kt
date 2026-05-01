@@ -58,4 +58,14 @@ class ContactRepository(private val socket: MaxSocket, private val auth: AuthPre
             chatId = m["chatId"] as? Long,
         )
     }
+
+    suspend fun findByPhones(phones: List<String>): List<Contact> {
+        val pkt = socket.sendAndAwait(
+            ru.maxx.app.core.protocol.MaxProtocol.Op.CONTACTS_LIST,
+            mapOf("phones" to phones)
+        ) ?: return emptyList()
+        @Suppress("UNCHECKED_CAST")
+        val raw = (pkt.payload["contacts"] as? List<Map<String, Any?>>) ?: return emptyList()
+        return raw.mapNotNull { parseContact(it) }
+    }
 }

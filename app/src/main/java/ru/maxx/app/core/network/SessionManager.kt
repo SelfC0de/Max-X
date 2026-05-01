@@ -269,9 +269,14 @@ class SessionManager(
     suspend fun loadSessions(): List<Map<String, Any?>> {
         val pkt = socket.sendAndAwait(MaxProtocol.Op.SESSIONS_LIST, mapOf("limit" to 50))
             ?: return emptyList()
+        Log.d(TAG, "SESSIONS payload keys: ${pkt.payload.keys}")
         if (pkt.cmd == MaxProtocol.CMD_OK) {
             @Suppress("UNCHECKED_CAST")
-            return (pkt.payload["sessions"] as? List<Map<String, Any?>>) ?: emptyList()
+            val list = (pkt.payload["sessions"] as? List<Map<String, Any?>>)
+                ?: (pkt.payload["devices"] as? List<Map<String, Any?>>)
+                ?: emptyList()
+            if (list.isNotEmpty()) Log.d(TAG, "SESSIONS first item keys: ${list.first().keys}")
+            return list
         }
         return emptyList()
     }
