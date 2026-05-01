@@ -158,4 +158,25 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
         @Suppress("UNCHECKED_CAST")
         return (pkt.payload["media"] as? List<Map<String, Any?>>) ?: emptyList()
     }
+
+    suspend fun enterChannel(channelId: Long): Boolean {
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.ENTER_CHANNEL,
+            mapOf("chatId" to channelId))
+        return pkt?.cmd == MaxProtocol.CMD_OK
+    }
+
+    suspend fun searchChannelsWithOffset(query: String, offset: Int = 0): List<Map<String, Any?>> {
+        val payload = if (query.isEmpty()) {
+            mapOf("count" to 30, "offset" to offset)
+        } else {
+            mapOf("query" to query, "count" to 30, "offset" to offset)
+        }
+        val pkt = socket.sendAndAwait(MaxProtocol.Op.SEARCH_CHANNELS, payload) ?: return emptyList()
+        // Сервер может вернуть "channels", "result", "items"
+        @Suppress("UNCHECKED_CAST")
+        return (pkt.payload["channels"] as? List<Map<String, Any?>>)
+            ?: (pkt.payload["result"] as? List<Map<String, Any?>>)
+            ?: (pkt.payload["items"] as? List<Map<String, Any?>>)
+            ?: emptyList()
+    }
 }

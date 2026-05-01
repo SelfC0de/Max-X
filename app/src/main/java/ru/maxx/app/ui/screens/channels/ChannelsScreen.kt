@@ -55,20 +55,21 @@ class ChannelsViewModel(container: AppContainer) : ViewModel() {
     }
 
     private fun loadRecommended() = viewModelScope.launch {
-        val results = container.msgRepo.searchChannels("")
+        val results = container.msgRepo.searchChannelsWithOffset("")
         _recommended.value = results
+        android.util.Log.d("Channels", "Recommended: ${results.size} items, keys=${results.firstOrNull()?.keys}")
     }
 
     fun search(query: String) = viewModelScope.launch {
         if (query.length < 2) { _searchResults.value = emptyList(); return@launch }
         _searchLoading.value = true
-        _searchResults.value = container.msgRepo.searchChannels(query)
+        _searchResults.value = container.msgRepo.searchChannelsWithOffset(query)
+        android.util.Log.d("Channels", "Search '$query': ${_searchResults.value.size} results")
         _searchLoading.value = false
     }
 
     fun joinChannel(channelId: Long) = viewModelScope.launch {
-        container.msgRepo.joinGroup(channelId.toString())
-        // Перезагружаем список
+        container.msgRepo.enterChannel(channelId)
         val all = container.chatRepo.loadChats()
         _channels.value = all.filter { it.type == ChatType.CHANNEL }
     }
@@ -211,16 +212,27 @@ private fun ChannelRow(ch: Chat, onLeave: () -> Unit, onClick: () -> Unit) {
 @Composable
 private fun SearchChannelRow(ch: Map<String, Any?>, onJoin: () -> Unit) {
     val title     = ch["title"]?.toString() ?: ch["name"]?.toString() ?: "Канал"
-    val desc      = ch["description"]?.toString() ?: ""
-    val members   = ch["membersCount"]?.toString() ?: ch["subscribers"]?.toString() ?: ""
+    val desc      = ch["description"]?.toString() ?: ch["about"]?.toString() ?: ""
+    val members   = ch["membersCount"]?.toString() ?: ch["subscribers"]?.toString()
+        ?: ch["memberCount"]?.toString() ?: ""
+    val avatarUrl = ch["photoUrl"]?.toString() ?: ch["avatarUrl"]?.toString()
+        ?: ch["photo"]?.toString() ?: ""
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Box(Modifier.size(44.dp).clip(CircleShape).background(BgCard), Alignment.Center) {
-            Text(title.take(2).uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        Box(Modifier.size(46.dp).clip(CircleShape).background(BgCard), Alignment.Center) {
+            if (avatarUrl.isNotEmpty()) {
+                coil.compose.AsyncImage(
+                    model = avatarUrl, contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.size(46.dp).clip(CircleShape)
+                )
+            } else {
+                Text(title.take(2).uppercase(), color = TextSecondary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            }
         }
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
