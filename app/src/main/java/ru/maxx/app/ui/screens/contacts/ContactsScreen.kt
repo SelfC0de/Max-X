@@ -3,6 +3,10 @@ package ru.maxx.app.ui.screens.contacts
 import android.Manifest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -119,7 +123,7 @@ fun ContactsScreen(container: AppContainer, onBack: () -> Unit, onContactClick: 
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad)) {
 
-            AnimatedVisibility(visible = showSearch, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
+            AnimatedVisibility(visible = showSearch, enter = fadeIn() + expandVertically(), exit = fadeOut() + shrinkVertically()) {
                 OutlinedTextField(
                     value = search, onValueChange = { search = it },
                     placeholder = { Text("Поиск контактов...", color = TextHint, fontSize = 13.sp) },
