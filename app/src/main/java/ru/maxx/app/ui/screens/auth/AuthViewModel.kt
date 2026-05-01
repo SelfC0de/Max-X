@@ -118,8 +118,8 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
         watchAuthState()
         viewModelScope.launch {
             try {
-                val ok = container.session.sendPassword(trackId, password)
-                if (!ok) { authWatchJob?.cancel(); _state.value = UiState.Error("Неверный пароль") }
+                container.session.sendPassword(trackId, password)
+                // Ответ придёт через watchAuthState → handlePacket → AUTH_PASSWORD
             } catch (e: Exception) { authWatchJob?.cancel(); _state.value = UiState.Error(e.message ?: "Ошибка") }
         }
     }

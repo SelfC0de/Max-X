@@ -101,13 +101,10 @@ class SessionManager(
     }
 
     suspend fun sendPassword(trackId: String, password: String): Boolean {
-        val pkt = socket.sendAndAwait(MaxProtocol.Op.AUTH_PASSWORD,
+        // Отправляем — handlePacket обработает ответ opcode=115
+        socket.send(MaxProtocol.Op.AUTH_PASSWORD,
             mapOf("trackId" to trackId, "password" to password))
-        if (pkt?.cmd == MaxProtocol.CMD_OK) return true
-        if (pkt?.cmd == MaxProtocol.CMD_ERROR) {
-            _authState.value = AuthState.Error(pkt.payload["message"]?.toString() ?: "Неверный пароль")
-        }
-        return false
+        return true
     }
 
     private fun handlePacket(pkt: MaxProtocol.Packet) {
@@ -166,6 +163,28 @@ class SessionManager(
                         Log.w(TAG, "AUTH_PHONE unknown cmd=${pkt.cmd} payload=${pkt.payload}")
                         _authState.value = AuthState.Error("Неожиданный ответ сервера: cmd=${pkt.cmd}")
                     }
+                }
+            }
+            MaxProtocol.Op.AUTH_PASSWORD -> {
+                Log.i(TAG, "AUTH_PASSWORD opcode=${pkt.opcode} cmd=${pkt.cmd}")
+                if (pkt.cmd == MaxProtocol.CMD_OK) {
+                    // Успешный ввод пароля 2FA — извлекаем токен
+                    @Suppress("UNCHECKED_CAST")
+                    val tokenAttrs = pkt.payload["tokenAttrs"] as? Map<*, *>
+                    val loginToken = (tokenAttrs?.get("LOGIN") as? Map<*, *>)?.get("token")?.toString()
+                    if (!loginToken.isNullOrBlank()) {
+                        prefs.setToken(loginToken)
+                        socket.markAuthorized()
+                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — token saved")
+                        scope.launch { authenticate(loginToken) }
+                        _authState.value = AuthState.Authenticated
+                    }
+                } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
+                    val msg = pkt.payload["localizedMessage"]?.toString()
+                        ?: pkt.payload["message"]?.toString()
+                        ?: "Неверный пароль"
+                    Log.e(TAG, "AUTH_PASSWORD ERROR: $msg")
+                    _authState.value = AuthState.Error(msg)
                 }
             }
             MaxProtocol.Op.AUTH_VERIFY, MaxProtocol.Op.AUTH_CHATS -> {
