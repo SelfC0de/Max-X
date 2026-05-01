@@ -81,6 +81,21 @@ class ChannelsViewModel(container: AppContainer) : ViewModel() {
 
 @Composable
 fun ChannelsScreen(container: AppContainer, onBack: () -> Unit, onChannelClick: (Long, String) -> Unit) {
+    var openChannelId     by remember { mutableStateOf<Long?>(null) }
+    var openChannelTitle  by remember { mutableStateOf("") }
+    var openChannelAvatar by remember { mutableStateOf("") }
+
+    if (openChannelId != null) {
+        ChannelFeedScreen(
+            container = container,
+            chatId    = openChannelId!!,
+            chatTitle = openChannelTitle,
+            avatarUrl = openChannelAvatar,
+            onBack    = { openChannelId = null }
+        )
+        return
+    }
+
     val vm            = remember { ChannelsViewModel(container) }
     val channels      by vm.channels.collectAsState()
     val recommended   by vm.recommended.collectAsState()
@@ -150,7 +165,7 @@ fun ChannelsScreen(container: AppContainer, onBack: () -> Unit, onChannelClick: 
                     if (channels.isNotEmpty()) {
                         item { SectionHeader("Мои каналы") }
                         items(channels, key = { it.id }) { ch ->
-                            ChannelRow(ch, onLeave = { vm.leaveChannel(ch.id) }, onClick = { onChannelClick(ch.id, ch.title) })
+                            ChannelRow(ch, onLeave = { vm.leaveChannel(ch.id) }, onClick = { openChannelId = ch.id; openChannelTitle = ch.title })
                         }
                     }
 
@@ -210,7 +225,7 @@ private fun ChannelRow(ch: Chat, onLeave: () -> Unit, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SearchChannelRow(ch: Map<String, Any?>, onJoin: () -> Unit) {
+private fun SearchChannelRow(ch: Map<String, Any?>, onJoin: () -> Unit, onClick: () -> Unit = {}) {
     val title     = ch["title"]?.toString() ?: ch["name"]?.toString() ?: "Канал"
     val desc      = ch["description"]?.toString() ?: ch["about"]?.toString() ?: ""
     val members   = ch["membersCount"]?.toString() ?: ch["subscribers"]?.toString()
@@ -219,7 +234,7 @@ private fun SearchChannelRow(ch: Map<String, Any?>, onJoin: () -> Unit) {
         ?: ch["photo"]?.toString() ?: ""
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
