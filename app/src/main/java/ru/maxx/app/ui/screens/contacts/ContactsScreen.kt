@@ -44,9 +44,7 @@ class ContactsViewModel(container: AppContainer) : ViewModel() {
             _loading.value = false
         }
         viewModelScope.launch {
-            repo.observePresence().collect { presence ->
-                val uid = (presence["userId"] as? Number)?.toLong() ?: return@collect
-                val online = presence["online"] as? Boolean ?: false
+            repo.observePresence().collect { (uid, online) ->
                 _contacts.value = _contacts.value.map { if (it.id == uid) it.copy(online = online) else it }
             }
         }
