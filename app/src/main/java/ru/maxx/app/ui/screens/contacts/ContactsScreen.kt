@@ -72,9 +72,6 @@ fun ContactsScreen(container: AppContainer, onBack: () -> Unit, onContactClick: 
     var search by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
-    // Разрешение на контакты
-    val contactsPermission = androidx.activity.result.ActivityResultLauncher::class
-
     val permLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
