@@ -60,7 +60,7 @@ class ChannelFeedViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             _loading.value = true
             val before = _posts.value.lastOrNull()?.id ?: 0L
-            val batch  = container.msgRepo.loadMessages(chatId, before)
+            val batch  = container.msgRepo.loadMessages(chatId, beforeId = if (before > 0) before else null)
             if (batch.isEmpty()) {
                 _hasMore.value = false
             } else {
@@ -328,10 +328,11 @@ private fun ChannelPost(post: Message) {
 
             // Просмотры и время
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                if (post.viewCount != null && post.viewCount > 0) {
+                val vc = try { post.viewCount } catch(e: Exception) { null }
+                if (vc != null && vc > 0) {
                     Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Outlined.Visibility, null, tint = TextHint, modifier = Modifier.size(13.dp))
-                        Text(formatCount(post.viewCount), fontSize = 11.sp, color = TextHint)
+                        Text(formatCount(vc ?: 0L), fontSize = 11.sp, color = TextHint)
                     }
                 }
                 if (post.time > 0) {
@@ -342,7 +343,7 @@ private fun ChannelPost(post: Message) {
     }
 }
 
-private fun formatDuration(seconds: Long): String {
+private fun formatDuration(seconds: Int): String {
     val m = seconds / 60; val s = seconds % 60
     return "%d:%02d".format(m, s)
 }
