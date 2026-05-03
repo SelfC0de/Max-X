@@ -262,10 +262,6 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
         uri?.let { vm.uploadAndSend(it) }
     }
     var showAttachMenu    by remember { mutableStateOf(false) }
-    var isRecordingVoice  by remember { mutableStateOf(false) }
-    val voicePermission = rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
-    ) { granted -> if (granted) { isRecordingVoice = true; vm.startVoiceRecording() } }
 
     if (showMediaGallery) {
         ru.maxx.app.ui.screens.media.MediaGalleryScreen(
@@ -423,7 +419,6 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                     val canSend = inputText.trim().isNotEmpty()
                     AnimatedContent(
                         targetState = when {
-                            isRecordingVoice -> "voice"
                             canSend          -> "send"
                             else             -> "mic"
                         },
@@ -458,11 +453,9 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 IconButton(
-                                    onClick = { isRecordingVoice = false; vm.cancelVoiceRecording() },
                                     modifier = Modifier.size(32.dp)
                                 ) { Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
                                 IconButton(
-                                    onClick = { isRecordingVoice = false; vm.stopAndSendVoice() },
                                     modifier = Modifier.size(32.dp)
                                 ) { Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
                             }
