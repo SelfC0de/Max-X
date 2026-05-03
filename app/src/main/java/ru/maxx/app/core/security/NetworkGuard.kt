@@ -85,7 +85,11 @@ object NetworkGuard {
         "reddit.com","redd.it",
 
         // ── Прочее ────────────────────────────────────────────────────────────────
-        "calls.okcdn.ru","zoom.us","teams.microsoft.com"
+        // ── Calls / KWS / TURN (нет функционала звонков) ─────────────────────────
+        "calls.okcdn.ru","calls-int.okcdn.ru","rtc.okcdn.ru",
+        "st.okcdn.ru",           // KWS модели BC-ResNet
+        "turn.oneme.ru","stun.oneme.ru","ice.oneme.ru",
+        "zoom.us","teams.microsoft.com"
     )
 
     // FIX: правильная проверка поддомена — h.endsWith(".$it"), не h.endsWith(".")

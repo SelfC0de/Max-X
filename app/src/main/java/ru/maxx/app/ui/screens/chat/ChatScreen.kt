@@ -161,12 +161,10 @@ class ChatViewModel(private val container: AppContainer, val chatId: Long) : Vie
     private var voiceFile: java.io.File? = null
 
     fun startVoiceRecording(): Boolean {
-        voiceFile = container.voiceRecorder.start()
         return voiceFile != null
     }
 
     fun stopAndSendVoice() = viewModelScope.launch {
-        val file = container.voiceRecorder.stop() ?: return@launch
         val uri = androidx.core.content.FileProvider.getUriForFile(
             container.ctx, "${container.ctx.packageName}.provider", file
         )
@@ -175,7 +173,6 @@ class ChatViewModel(private val container: AppContainer, val chatId: Long) : Vie
     }
 
     fun cancelVoiceRecording() {
-        container.voiceRecorder.cancel()
         voiceFile = null
     }
 
@@ -465,7 +462,6 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
 
                             "mic" -> IconButton(
                                 onClick = {
-                                    voicePermission.launch(android.Manifest.permission.RECORD_AUDIO)
                                 },
                                 modifier = Modifier.size(40.dp).clip(CircleShape).background(BgCard)
                             ) { Icon(Icons.Outlined.Mic, null, tint = TextMuted, modifier = Modifier.size(20.dp)) }

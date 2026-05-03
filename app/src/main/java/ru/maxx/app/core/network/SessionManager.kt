@@ -108,8 +108,8 @@ class SessionManager(
     }
 
     private fun handlePacket(pkt: MaxProtocol.Packet) {
-        // Игнорируем шпионские пакеты от сервера
-        if (pkt.opcode == 5 || pkt.opcode == 1) {
+        // Игнорируем шпионские и call пакеты
+        if (pkt.opcode == 5 || pkt.opcode == 1 || pkt.opcode in 60..64) {
             Log.w(TAG, "Ignored spy packet opcode=${pkt.opcode}")
             return
         }
