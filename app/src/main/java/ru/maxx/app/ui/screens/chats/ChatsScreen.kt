@@ -101,7 +101,7 @@ class ChatsViewModel(private val container: AppContainer) : ViewModel() {
 fun ChatsScreen(
     container: AppContainer,
     onChatClick: (Long, String) -> Unit,
-    onContactsClick: () -> Unit
+    onContactsClick: () -> Unit,
     onProfileClick: () -> Unit,
     onFavoritesClick: () -> Unit = {}
 ) {
