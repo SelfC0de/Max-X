@@ -168,16 +168,13 @@ class SessionManager(
             MaxProtocol.Op.AUTH_PASSWORD -> {
                 Log.i(TAG, "AUTH_PASSWORD opcode=${pkt.opcode} cmd=${pkt.cmd}")
                 if (pkt.cmd == MaxProtocol.CMD_OK) {
-                    // Успешный ввод пароля 2FA — извлекаем токен
                     @Suppress("UNCHECKED_CAST")
                     val tokenAttrs = pkt.payload["tokenAttrs"] as? Map<*, *>
                     val loginToken = (tokenAttrs?.get("LOGIN") as? Map<*, *>)?.get("token")?.toString()
                     if (!loginToken.isNullOrBlank()) {
                         prefs.setToken(loginToken)
-                        socket.markAuthorized()
-                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — token saved")
-                        scope.launch { authenticate(loginToken) }
-                        _authState.value = AuthState.Authenticated
+                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — token saved, waiting for AUTH_CHATS")
+                        // Не вызываем authenticate() — сервер сам пришлёт opcode=19 с чатами
                     }
                 } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
                     val msg = pkt.payload["localizedMessage"]?.toString()
