@@ -158,23 +158,8 @@ class ChatViewModel(private val container: AppContainer, val chatId: Long) : Vie
         _loading.value = false
     }
 
-    private var voiceFile: java.io.File? = null
 
-    fun startVoiceRecording(): Boolean {
-        return voiceFile != null
-    }
 
-    fun stopAndSendVoice() = viewModelScope.launch {
-        val uri = androidx.core.content.FileProvider.getUriForFile(
-            container.ctx, "${container.ctx.packageName}.provider", file
-        )
-        uploadAndSend(uri)
-        file.deleteOnExit()
-    }
-
-    fun cancelVoiceRecording() {
-        voiceFile = null
-    }
 
     fun setAutoDelete(seconds: Int) = viewModelScope.launch {
         container.msgRepo.setAutoDelete(chatId, seconds)
