@@ -171,10 +171,10 @@ class SessionManager(
                     @Suppress("UNCHECKED_CAST")
                     val tokenAttrs = pkt.payload["tokenAttrs"] as? Map<*, *>
                     val loginToken = (tokenAttrs?.get("LOGIN") as? Map<*, *>)?.get("token")?.toString()
-                    if (!loginToken.isNullOrBlank() && _authState.value !is AuthState.Authenticated) {
+                    if (!loginToken.isNullOrBlank()) {
                         prefs.setToken(loginToken)
-                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — calling authenticate()")
-                        scope.launch { authenticate(loginToken) }
+                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — token saved, server will send AUTH_CHATS")
+                        // Сервер сам пришлёт opcode=19 — не вызываем authenticate()
                     }
                 } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
                     val msg = pkt.payload["localizedMessage"]?.toString()
@@ -243,8 +243,9 @@ class SessionManager(
                     val errCode = pkt.payload["code"]?.toString() ?: ""
                     Log.e(TAG, "AUTH_VERIFY ERROR code=$errCode msg=$errMsg full=${pkt.payload}")
                     // proto.state = сервер уже обработал AUTH_CHATS и шлёт дубль — игнорируем
+                    // proto.state — ошибка дубля AUTH_CHATS, всегда игнорируем
                     if (errCode == "proto.state" || errMsg.contains("proto.state") || errMsg.contains("NEW session")) {
-                        Log.w(TAG, "Ignoring proto.state error — already authenticated")
+                        Log.w(TAG, "Ignoring proto.state error")
                         return
                     }
                     // Код устарел / неверен — предлагаем запросить снова
@@ -292,11 +293,14 @@ class SessionManager(
     }
 
     private suspend fun authenticate(token: String) {
-        socket.send(MaxProtocol.Op.AUTH_CHATS, mapOf(
+        // sendAndAwait перехватывает ответ по seq — handlePacket его не получит
+        socket.sendAndAwait(MaxProtocol.Op.AUTH_CHATS, mapOf(
             "token" to token,
             "limit" to 50,
             "offset" to 0
-        ))
+        ), timeoutMs = 15_000L)
+        // Ответ обрабатывается в handlePacket только если пришёл вне sendAndAwait
+        // sendAndAwait забирает пакет раньше
     }
 
     fun cancel() {
