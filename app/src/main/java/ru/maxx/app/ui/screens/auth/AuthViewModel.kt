@@ -112,8 +112,11 @@ class AuthViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    private var passwordSent = false
+
     fun sendPassword(trackId: String, password: String) {
-        if (_state.value == UiState.Loading) return
+        if (_state.value == UiState.Loading || passwordSent) return
+        passwordSent = true
         _state.value = UiState.Loading
         watchAuthState()
         viewModelScope.launch {
