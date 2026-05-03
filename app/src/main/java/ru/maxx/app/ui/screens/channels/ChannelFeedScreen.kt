@@ -328,13 +328,6 @@ private fun ChannelPost(post: Message) {
 
             // Просмотры и время
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                val vc = try { post.viewCount } catch(e: Exception) { null }
-                if (vc != null && vc > 0) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Outlined.Visibility, null, tint = TextHint, modifier = Modifier.size(13.dp))
-                        Text(formatCount(vc ?: 0L), fontSize = 11.sp, color = TextHint)
-                    }
-                }
                 if (post.time > 0) {
                     Text(formatPostTime(post.time), fontSize = 11.sp, color = TextHint)
                 }
