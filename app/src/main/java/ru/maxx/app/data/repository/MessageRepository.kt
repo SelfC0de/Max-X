@@ -166,17 +166,23 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
     }
 
     suspend fun searchChannelsWithOffset(query: String, offset: Int = 0): List<Map<String, Any?>> {
-        val payload = if (query.isEmpty()) {
-            mapOf("count" to 30, "offset" to offset)
+        // MAX protocol: для рекомендаций запрос без query или с query=""
+        // Пробуем разные варианты payload
+        val payload: Map<String, Any?> = if (query.isEmpty()) {
+            mapOf("count" to 30)
         } else {
             mapOf("query" to query, "count" to 30, "offset" to offset)
         }
         val pkt = socket.sendAndAwait(MaxProtocol.Op.SEARCH_CHANNELS, payload) ?: return emptyList()
-        // Сервер может вернуть "channels", "result", "items"
+        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS cmd=${pkt.cmd} keys=${pkt.payload.keys} query='$query'")
+        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS payload=${ pkt.payload.entries.take(3) }")
         @Suppress("UNCHECKED_CAST")
-        return (pkt.payload["channels"] as? List<Map<String, Any?>>)
+        val result = (pkt.payload["channels"] as? List<Map<String, Any?>>)
             ?: (pkt.payload["result"] as? List<Map<String, Any?>>)
             ?: (pkt.payload["items"] as? List<Map<String, Any?>>)
+            ?: (pkt.payload["list"] as? List<Map<String, Any?>>)
             ?: emptyList()
+        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS result size=${result.size} firstKeys=${result.firstOrNull()?.keys}")
+        return result
     }
 }
