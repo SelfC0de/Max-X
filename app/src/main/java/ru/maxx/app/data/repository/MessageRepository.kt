@@ -144,12 +144,6 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
         return (pkt.payload["members"] as? List<Map<String, Any?>>) ?: emptyList()
     }
 
-    suspend fun searchChannels(query: String): List<Map<String, Any?>> {
-        val pkt = socket.sendAndAwait(MaxProtocol.Op.SEARCH_CHANNELS, mapOf("query" to query))
-            ?: return emptyList()
-        @Suppress("UNCHECKED_CAST")
-        return (pkt.payload["channels"] as? List<Map<String, Any?>>) ?: emptyList()
-    }
 
     suspend fun loadMediaList(chatId: Long, type: String): List<Map<String, Any?>> {
         val pkt = socket.sendAndAwait(MaxProtocol.Op.MEDIA_LIST,
@@ -159,30 +153,5 @@ class MessageRepository(private val socket: MaxSocket, private val auth: AuthPre
         return (pkt.payload["media"] as? List<Map<String, Any?>>) ?: emptyList()
     }
 
-    suspend fun enterChannel(channelId: Long): Boolean {
-        val pkt = socket.sendAndAwait(MaxProtocol.Op.ENTER_CHANNEL,
-            mapOf("chatId" to channelId))
-        return pkt?.cmd == MaxProtocol.CMD_OK
-    }
 
-    suspend fun searchChannelsWithOffset(query: String, offset: Int = 0): List<Map<String, Any?>> {
-        // MAX protocol: для рекомендаций запрос без query или с query=""
-        // Пробуем разные варианты payload
-        val payload: Map<String, Any?> = if (query.isEmpty()) {
-            mapOf("count" to 30)
-        } else {
-            mapOf("query" to query, "count" to 30, "offset" to offset)
-        }
-        val pkt = socket.sendAndAwait(MaxProtocol.Op.SEARCH_CHANNELS, payload) ?: return emptyList()
-        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS cmd=${pkt.cmd} keys=${pkt.payload.keys} query='$query'")
-        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS payload=${ pkt.payload.entries.take(3) }")
-        @Suppress("UNCHECKED_CAST")
-        val result = (pkt.payload["channels"] as? List<Map<String, Any?>>)
-            ?: (pkt.payload["result"] as? List<Map<String, Any?>>)
-            ?: (pkt.payload["items"] as? List<Map<String, Any?>>)
-            ?: (pkt.payload["list"] as? List<Map<String, Any?>>)
-            ?: emptyList()
-        android.util.Log.d("ChannelsRepo", "SEARCH_CHANNELS result size=${result.size} firstKeys=${result.firstOrNull()?.keys}")
-        return result
-    }
 }

@@ -57,9 +57,6 @@ class AppPrefs(private val ctx: Context) {
         get() = sp.getBoolean("notif_groups", true)
         set(v) = sp.edit { putBoolean("notif_groups", v) }
 
-    var notifChannels: Boolean
-        get() = sp.getBoolean("notif_channels", false)
-        set(v) = sp.edit { putBoolean("notif_channels", v) }
 
     var notifSound: Boolean
         get() = sp.getBoolean("notif_sound", true)

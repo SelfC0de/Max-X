@@ -101,8 +101,7 @@ class ChatsViewModel(private val container: AppContainer) : ViewModel() {
 fun ChatsScreen(
     container: AppContainer,
     onChatClick: (Long, String) -> Unit,
-    onContactsClick: () -> Unit,
-    onChannelsClick: () -> Unit,
+    onContactsClick: () -> Unit
     onProfileClick: () -> Unit,
     onFavoritesClick: () -> Unit = {}
 ) {
@@ -222,8 +221,7 @@ private fun FolderTabs(
         StaticTab("all",      "Все",           Icons.Default.AllInbox),
         StaticTab("personal", "Личные",        Icons.Outlined.Person),
         StaticTab("groups",   "Группы",        Icons.Outlined.Group),
-        StaticTab("channels", "Каналы",        Icons.Outlined.Campaign),
-        StaticTab("unread",   "Непрочитанные", Icons.Default.MarkChatUnread),
+            StaticTab("unread",   "Непрочитанные", Icons.Default.MarkChatUnread),
     )
 
     LazyRow(

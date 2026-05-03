@@ -124,8 +124,6 @@ fun SettingsScreen(container: AppContainer, onBack: () -> Unit, onSpoofSetup: ()
             ExpandableCard("Уведомления", Icons.Outlined.Notifications, Color(0xFF2E1A0D), Orange) {
                 SettingsSwitchRow("Личные чаты", null, container.appPrefs.notifPersonal) { container.appPrefs.notifPersonal = it }
                 SettingsSwitchRow("Группы", null, container.appPrefs.notifGroups) { container.appPrefs.notifGroups = it }
-                SettingsSwitchRow("Каналы", null, container.appPrefs.notifChannels) { container.appPrefs.notifChannels = it }
-                SettingsSwitchRow("Звук", null, container.appPrefs.notifSound) { container.appPrefs.notifSound = it }
                 SettingsSwitchRow("Вибрация", null, notifV, showDivider = false) { container.appPrefs.notifVibro = it }
             }
 

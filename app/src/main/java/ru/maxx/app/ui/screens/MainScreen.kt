@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.sp
 import ru.maxx.app.di.AppContainer
 import ru.maxx.app.ui.screens.chats.ChatsScreen
 import ru.maxx.app.ui.screens.contacts.ContactsScreen
-import ru.maxx.app.ui.screens.channels.ChannelsScreen
 import ru.maxx.app.ui.screens.profile.ProfileScreen
 import ru.maxx.app.ui.screens.settings.SettingsScreen
 import ru.maxx.app.ui.screens.auth.SpoofSetupScreen
@@ -88,7 +87,6 @@ fun MainScreen(
                     container        = container,
                     onChatClick      = onChatClick,
                     onContactsClick  = { selectedTab = 1 },
-                    onChannelsClick  = { selectedTab = 2 },
                     onProfileClick   = { selectedTab = 3 },
                     onFavoritesClick = { showFavorites = true }
                 )
@@ -97,12 +95,7 @@ fun MainScreen(
                     onBack         = { selectedTab = 0 },
                     onContactClick = onChatClick
                 )
-                2 -> ChannelsScreen(
-                    container      = container,
-                    onBack         = { selectedTab = 0 },
-                    onChannelClick = onChatClick
-                )
-                3 -> ProfileScreen(
+                2 -> ProfileScreen(
                     container        = container,
                     onBack           = { selectedTab = 0 },
                     onSettingsClick  = { showSettings = true },

@@ -22,7 +22,6 @@ sealed class Route(val path: String) {
         fun go(id: Long, title: String) = "chat/$id/${java.net.URLEncoder.encode(title, "UTF-8")}"
     }
     object Contacts  : Route("contacts")
-    object Channels  : Route("channels")
     object Profile   : Route("profile")
     object Settings  : Route("settings")
     object Favorites : Route("favorites")
