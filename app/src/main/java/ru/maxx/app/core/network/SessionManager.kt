@@ -171,10 +171,12 @@ class SessionManager(
                     @Suppress("UNCHECKED_CAST")
                     val tokenAttrs = pkt.payload["tokenAttrs"] as? Map<*, *>
                     val loginToken = (tokenAttrs?.get("LOGIN") as? Map<*, *>)?.get("token")?.toString()
-                    if (!loginToken.isNullOrBlank()) {
+                    if (!loginToken.isNullOrBlank() && _authState.value !is AuthState.Authenticated) {
                         prefs.setToken(loginToken)
-                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — token saved, server will send AUTH_CHATS")
-                        // Сервер сам пришлёт opcode=19 — не вызываем authenticate()
+                        socket.markAuthorized()
+                        Log.i(TAG, "AUTH_PASSWORD: SUCCESS — setting Authenticated")
+                        _authState.value = AuthState.Authenticated
+                        scope.launch { authenticate(loginToken) }
                     }
                 } else if (pkt.cmd == MaxProtocol.CMD_ERROR) {
                     val msg = pkt.payload["localizedMessage"]?.toString()
