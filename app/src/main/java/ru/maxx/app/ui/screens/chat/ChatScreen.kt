@@ -420,8 +420,7 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                     AnimatedContent(
                         targetState = when {
                             canSend          -> "send"
-                            else             -> "mic"
-                        },
+                                    },
                         transitionSpec = { scaleIn(tween(150)) togetherWith scaleOut(tween(150)) },
                         label = "send_btn"
                     ) { state ->
@@ -444,21 +443,6 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                                 onClick = {
                                 },
                                 modifier = Modifier.size(40.dp).clip(CircleShape).background(BgCard)
-                            ) { Icon(Icons.Outlined.Mic, null, tint = TextMuted, modifier = Modifier.size(20.dp)) }
-
-                            "voice" -> Row(
-                                modifier = Modifier.height(40.dp).clip(RoundedCornerShape(20.dp))
-                                    .background(Red).padding(horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                IconButton(
-                                    modifier = Modifier.size(32.dp)
-                                ) { Icon(Icons.Default.Close, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
-                                IconButton(
-                                    modifier = Modifier.size(32.dp)
-                                ) { Icon(Icons.AutoMirrored.Filled.Send, null, tint = Color.White, modifier = Modifier.size(16.dp)) }
-                            }
                             else -> Box(Modifier.size(40.dp))
                         }
                     }
@@ -733,7 +717,7 @@ private fun AttachmentView(attach: Attachment, isMine: Boolean) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Box(Modifier.size(32.dp).clip(CircleShape).background(AccentDark), Alignment.Center) {
-                    Icon(Icons.Default.Mic, null, tint = Accent, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Outlined.GraphicEq, null, tint = Accent, modifier = Modifier.size(16.dp))
                 }
                 Column(Modifier.weight(1f)) {
                     // Wave mock
