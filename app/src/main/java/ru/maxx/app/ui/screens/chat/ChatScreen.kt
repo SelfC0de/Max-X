@@ -439,10 +439,6 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                                 modifier = Modifier.size(40.dp).clip(CircleShape).background(Accent)
                             ) { Icon(Icons.AutoMirrored.Filled.Send, null, tint = BgSecondary, modifier = Modifier.size(18.dp)) }
 
-                            "mic" -> IconButton(
-                                onClick = {
-                                },
-                                modifier = Modifier.size(40.dp).clip(CircleShape).background(BgCard)
                             else -> Box(Modifier.size(40.dp))
                         }
                     }
