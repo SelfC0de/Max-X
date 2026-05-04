@@ -419,8 +419,9 @@ fun ChatScreen(container: AppContainer, chatId: Long, title: String, onBack: () 
                     val canSend = inputText.trim().isNotEmpty()
                     AnimatedContent(
                         targetState = when {
-                            canSend          -> "send"
-                                    },
+                            canSend -> "send"
+                            else    -> "empty"
+                        },
                         transitionSpec = { scaleIn(tween(150)) togetherWith scaleOut(tween(150)) },
                         label = "send_btn"
                     ) { state ->
